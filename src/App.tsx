@@ -1,98 +1,89 @@
-"use client";
-import React, { useState } from "react";
-import { AuthProvider } from "./contexts/AuthContext";
-import Navigation from "./components/Navigation";
-import Hero from "./components/Hero";
-import CourseCard from "./components/CourseCard";
-import StudentDashboard from "./components/Dashboard/StudentDashboard";
-import AuthModal from "./components/Auth/AuthModal";
-import Footer from "./components/Footer";
-import { Grid, List, Filter, Search, ChevronDown, Star } from "lucide-react";
+import React, { useState } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import Navigation from './components/Navigation';
+import Hero from './components/Hero';
+import CourseCard from './components/CourseCard';
+import StudentDashboard from './components/Dashboard/StudentDashboard';
+import AdminDashboard from './components/Dashboard/AdminDashboard';
+import InstructorDashboard from './components/Dashboard/InstructorDashboard';
+import AuthModal from './components/Auth/AuthModal';
+import Footer from './components/Footer';
+import { Grid, List, Filter, Search, ChevronDown, Star } from 'lucide-react';
 
 function App() {
-  const [currentView, setCurrentView] = useState<
-    "home" | "courses" | "dashboard"
-  >("home");
+  const [currentView, setCurrentView] = useState<'home' | 'courses' | 'dashboard' | 'admin' | 'instructor'>('home');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [courseLayout, setCourseLayout] = useState<"grid" | "list">("grid");
+  const [courseLayout, setCourseLayout] = useState<'grid' | 'list'>('grid');
 
   // Mock courses data
   const courses = [
     {
-      id: "1",
-      title: "Full-Stack Web Development with React & Node.js",
-      description:
-        "Master modern web development with React, Node.js, MongoDB, and deploy scalable applications.",
-      instructor: { name: "Sarah Johnson", avatar: "" },
-      thumbnail:
-        "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg",
+      id: '1',
+      title: 'Full-Stack Web Development with React & Node.js',
+      description: 'Master modern web development with React, Node.js, MongoDB, and deploy scalable applications.',
+      instructor: { name: 'Sarah Johnson', avatar: '' },
+      thumbnail: 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg',
       price: 89000,
       originalPrice: 120000,
-      duration: "12 weeks",
+      duration: '12 weeks',
       studentsCount: 2340,
       rating: 4.9,
       reviewsCount: 1205,
-      level: "Intermediate" as const,
-      category: "Web Development",
-      tags: ["React", "Node.js", "JavaScript", "MongoDB"],
+      level: 'Intermediate' as const,
+      category: 'Web Development',
+      tags: ['React', 'Node.js', 'JavaScript', 'MongoDB'],
       isFeatured: true,
       isNew: false,
     },
     {
-      id: "2",
-      title: "Digital Marketing Mastery for African Businesses",
-      description:
-        "Learn digital marketing strategies tailored for the African market and grow your business online.",
-      instructor: { name: "Michael Okafor", avatar: "" },
-      thumbnail:
-        "https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg",
+      id: '2',
+      title: 'Digital Marketing Mastery for African Businesses',
+      description: 'Learn digital marketing strategies tailored for the African market and grow your business online.',
+      instructor: { name: 'Michael Okafor', avatar: '' },
+      thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg',
       price: 65000,
-      duration: "8 weeks",
+      duration: '8 weeks',
       studentsCount: 1890,
       rating: 4.8,
       reviewsCount: 945,
-      level: "Beginner" as const,
-      category: "Marketing",
-      tags: ["SEO", "Social Media", "Google Ads", "Analytics"],
+      level: 'Beginner' as const,
+      category: 'Marketing',
+      tags: ['SEO', 'Social Media', 'Google Ads', 'Analytics'],
       isFeatured: false,
       isNew: true,
     },
     {
-      id: "3",
-      title: "Data Science & Machine Learning with Python",
-      description:
-        "Dive deep into data science, learn Python, pandas, sklearn, and build ML models for real-world problems.",
-      instructor: { name: "Dr. Amina Hassan", avatar: "" },
-      thumbnail:
-        "https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg",
+      id: '3',
+      title: 'Data Science & Machine Learning with Python',
+      description: 'Dive deep into data science, learn Python, pandas, sklearn, and build ML models for real-world problems.',
+      instructor: { name: 'Dr. Amina Hassan', avatar: '' },
+      thumbnail: 'https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg',
       price: 95000,
       originalPrice: 130000,
-      duration: "16 weeks",
+      duration: '16 weeks',
       studentsCount: 1567,
       rating: 4.9,
       reviewsCount: 823,
-      level: "Advanced" as const,
-      category: "Data Science",
-      tags: ["Python", "Machine Learning", "Pandas", "TensorFlow"],
+      level: 'Advanced' as const,
+      category: 'Data Science',
+      tags: ['Python', 'Machine Learning', 'Pandas', 'TensorFlow'],
       isFeatured: true,
       isNew: false,
     },
     {
-      id: "4",
-      title: "Mobile App Development with Flutter",
-      description:
-        "Build cross-platform mobile applications for iOS and Android using Google's Flutter framework.",
-      instructor: { name: "James Okoye", avatar: "" },
-      thumbnail:
-        "https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg",
+      id: '4',
+      title: 'Mobile App Development with Flutter',
+      description: 'Build cross-platform mobile applications for iOS and Android using Google\'s Flutter framework.',
+      instructor: { name: 'James Okoye', avatar: '' },
+      thumbnail: 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg',
       price: 78000,
-      duration: "10 weeks",
+      duration: '10 weeks',
       studentsCount: 1234,
       rating: 4.7,
       reviewsCount: 567,
-      level: "Intermediate" as const,
-      category: "Mobile Development",
-      tags: ["Flutter", "Dart", "iOS", "Android"],
+      level: 'Intermediate' as const,
+      category: 'Mobile Development',
+      tags: ['Flutter', 'Dart', 'iOS', 'Android'],
       isFeatured: false,
       isNew: true,
     },
@@ -101,7 +92,7 @@ function App() {
   const renderHome = () => (
     <>
       <Hero />
-
+      
       {/* Featured Courses Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,8 +101,7 @@ function App() {
               Featured Courses
             </h2>
             <p className="text-xl text-gray-600 font-body max-w-3xl mx-auto">
-              Discover our most popular and highly-rated courses designed to
-              accelerate your career
+              Discover our most popular and highly-rated courses designed to accelerate your career
             </p>
           </div>
 
@@ -122,8 +112,8 @@ function App() {
           </div>
 
           <div className="text-center">
-            <button
-              onClick={() => setCurrentView("courses")}
+            <button 
+              onClick={() => setCurrentView('courses')}
               className="bg-secondary-500 hover:bg-secondary-600 text-white px-8 py-3 rounded-lg font-body font-semibold transition-colors"
             >
               View All Courses
@@ -137,33 +127,22 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
             <div>
-              <div className="text-4xl font-headline font-bold text-secondary-500 mb-2">
-                50K+
-              </div>
+              <div className="text-4xl font-headline font-bold text-secondary-500 mb-2">50K+</div>
               <p className="font-body">Students</p>
             </div>
             <div>
-              <div className="text-4xl font-headline font-bold text-accent-500 mb-2">
-                1,000+
-              </div>
+              <div className="text-4xl font-headline font-bold text-accent-500 mb-2">1,000+</div>
               <p className="font-body">Courses</p>
             </div>
             <div>
-              <div className="text-4xl font-headline font-bold text-tech-500 mb-2">
-                500+
-              </div>
+              <div className="text-4xl font-headline font-bold text-tech-500 mb-2">500+</div>
               <p className="font-body">Instructors</p>
             </div>
             <div>
-              <div className="text-4xl font-headline font-bold text-secondary-500 mb-2">
-                4.9
-              </div>
+              <div className="text-4xl font-headline font-bold text-secondary-500 mb-2">4.9</div>
               <div className="flex items-center justify-center space-x-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-4 w-4 fill-current text-secondary-500"
-                  />
+                  <Star key={i} className="h-4 w-4 fill-current text-secondary-500" />
                 ))}
               </div>
             </div>
@@ -223,21 +202,17 @@ function App() {
               {/* Layout Toggle */}
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setCourseLayout("grid")}
+                  onClick={() => setCourseLayout('grid')}
                   className={`p-2 rounded ${
-                    courseLayout === "grid"
-                      ? "bg-white shadow"
-                      : "text-gray-500"
+                    courseLayout === 'grid' ? 'bg-white shadow' : 'text-gray-500'
                   }`}
                 >
                   <Grid className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setCourseLayout("list")}
+                  onClick={() => setCourseLayout('list')}
                   className={`p-2 rounded ${
-                    courseLayout === "list"
-                      ? "bg-white shadow"
-                      : "text-gray-500"
+                    courseLayout === 'list' ? 'bg-white shadow' : 'text-gray-500'
                   }`}
                 >
                   <List className="h-4 w-4" />
@@ -255,13 +230,11 @@ function App() {
         </div>
 
         {/* Course Grid/List */}
-        <div
-          className={
-            courseLayout === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              : "space-y-6"
-          }
-        >
+        <div className={
+          courseLayout === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
+            : 'space-y-6'
+        }>
           {courses.map((course) => (
             <CourseCard key={course.id} course={course} layout={courseLayout} />
           ))}
@@ -281,40 +254,50 @@ function App() {
     <AuthProvider>
       <div className="min-h-screen bg-white font-body">
         <Navigation />
-
+        
         {/* Navigation Buttons for Demo */}
         <div className="bg-tech-500 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-4 py-2">
+            <div className="flex flex-wrap space-x-4 py-2">
               <button
-                onClick={() => setCurrentView("home")}
+                onClick={() => setCurrentView('home')}
                 className={`px-4 py-2 rounded font-body font-medium transition-colors ${
-                  currentView === "home"
-                    ? "bg-white text-tech-500"
-                    : "text-tech-100 hover:text-white"
+                  currentView === 'home' ? 'bg-white text-tech-500' : 'text-tech-100 hover:text-white'
                 }`}
               >
                 Home
               </button>
               <button
-                onClick={() => setCurrentView("courses")}
+                onClick={() => setCurrentView('courses')}
                 className={`px-4 py-2 rounded font-body font-medium transition-colors ${
-                  currentView === "courses"
-                    ? "bg-white text-tech-500"
-                    : "text-tech-100 hover:text-white"
+                  currentView === 'courses' ? 'bg-white text-tech-500' : 'text-tech-100 hover:text-white'
                 }`}
               >
                 Courses
               </button>
               <button
-                onClick={() => setCurrentView("dashboard")}
+                onClick={() => setCurrentView('dashboard')}
                 className={`px-4 py-2 rounded font-body font-medium transition-colors ${
-                  currentView === "dashboard"
-                    ? "bg-white text-tech-500"
-                    : "text-tech-100 hover:text-white"
+                  currentView === 'dashboard' ? 'bg-white text-tech-500' : 'text-tech-100 hover:text-white'
                 }`}
               >
-                Dashboard
+                Student
+              </button>
+              <button
+                onClick={() => setCurrentView('instructor')}
+                className={`px-4 py-2 rounded font-body font-medium transition-colors ${
+                  currentView === 'instructor' ? 'bg-white text-tech-500' : 'text-tech-100 hover:text-white'
+                }`}
+              >
+                Instructor
+              </button>
+              <button
+                onClick={() => setCurrentView('admin')}
+                className={`px-4 py-2 rounded font-body font-medium transition-colors ${
+                  currentView === 'admin' ? 'bg-white text-tech-500' : 'text-tech-100 hover:text-white'
+                }`}
+              >
+                Admin
               </button>
               <button
                 onClick={() => setIsAuthModalOpen(true)}
@@ -327,16 +310,18 @@ function App() {
         </div>
 
         <main>
-          {currentView === "home" && renderHome()}
-          {currentView === "courses" && renderCourses()}
-          {currentView === "dashboard" && <StudentDashboard />}
+          {currentView === 'home' && renderHome()}
+          {currentView === 'courses' && renderCourses()}
+          {currentView === 'dashboard' && <StudentDashboard />}
+          {currentView === 'instructor' && <InstructorDashboard />}
+          {currentView === 'admin' && <AdminDashboard />}
         </main>
 
         <Footer />
 
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={() => setIsAuthModalOpen(false)} 
         />
       </div>
     </AuthProvider>
