@@ -1,71 +1,104 @@
-import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  Trophy, 
-  Clock, 
-  TrendingUp, 
-  Play, 
-  Award, 
+import React, { useState } from "react";
+import {
+  BookOpen,
+  Trophy,
+  Clock,
+  TrendingUp,
+  Play,
+  Award,
   Calendar,
   Bell,
   Search,
   Filter,
   MoreVertical,
   Star,
-  Users
-} from 'lucide-react';
+  Users,
+} from "lucide-react";
 
 const StudentDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Mock data
   const stats = {
     enrolledCourses: 8,
     completedCourses: 3,
     certificatesEarned: 3,
-    studyHours: 42
+    studyHours: 42,
   };
 
   const recentCourses = [
     {
       id: 1,
-      title: 'Full-Stack Web Development',
-      instructor: 'Jane Doe',
+      title: "Full-Stack Web Development",
+      instructor: "Jane Doe",
       progress: 75,
-      thumbnail: 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg',
-      nextLesson: 'React Hooks Deep Dive',
-      duration: '45 min'
+      thumbnail:
+        "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg",
+      nextLesson: "React Hooks Deep Dive",
+      duration: "45 min",
     },
     {
       id: 2,
-      title: 'Digital Marketing Mastery',
-      instructor: 'John Smith',
+      title: "Digital Marketing Mastery",
+      instructor: "John Smith",
       progress: 45,
-      thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg',
-      nextLesson: 'SEO Optimization',
-      duration: '30 min'
+      thumbnail:
+        "https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg",
+      nextLesson: "SEO Optimization",
+      duration: "30 min",
     },
     {
       id: 3,
-      title: 'Data Science with Python',
-      instructor: 'Dr. Sarah Johnson',
+      title: "Data Science with Python",
+      instructor: "Dr. Sarah Johnson",
       progress: 20,
-      thumbnail: 'https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg',
-      nextLesson: 'Pandas Fundamentals',
-      duration: '60 min'
-    }
+      thumbnail:
+        "https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg",
+      nextLesson: "Pandas Fundamentals",
+      duration: "60 min",
+    },
   ];
 
   const upcomingDeadlines = [
-    { course: 'Full-Stack Web Development', assignment: 'Final Project', dueDate: '2025-01-15', priority: 'high' },
-    { course: 'Digital Marketing Mastery', assignment: 'Case Study Analysis', dueDate: '2025-01-18', priority: 'medium' },
-    { course: 'Data Science with Python', assignment: 'Quiz 3', dueDate: '2025-01-20', priority: 'low' }
+    {
+      course: "Full-Stack Web Development",
+      assignment: "Final Project",
+      dueDate: "2025-01-15",
+      priority: "high",
+    },
+    {
+      course: "Digital Marketing Mastery",
+      assignment: "Case Study Analysis",
+      dueDate: "2025-01-18",
+      priority: "medium",
+    },
+    {
+      course: "Data Science with Python",
+      assignment: "Quiz 3",
+      dueDate: "2025-01-20",
+      priority: "low",
+    },
   ];
 
   const achievements = [
-    { title: 'Quick Learner', description: 'Completed 5 lessons in one day', icon: '🚀', earned: true },
-    { title: 'Perfect Score', description: 'Scored 100% in a quiz', icon: '🎯', earned: true },
-    { title: 'Consistent Student', description: '7-day learning streak', icon: '🔥', earned: false }
+    {
+      title: "Quick Learner",
+      description: "Completed 5 lessons in one day",
+      icon: "🚀",
+      earned: true,
+    },
+    {
+      title: "Perfect Score",
+      description: "Scored 100% in a quiz",
+      icon: "🎯",
+      earned: true,
+    },
+    {
+      title: "Consistent Student",
+      description: "7-day learning streak",
+      icon: "🔥",
+      earned: false,
+    },
   ];
 
   return (
@@ -77,22 +110,6 @@ const StudentDashboard: React.FC = () => {
             <h1 className="text-2xl font-headline font-bold text-primary-500">
               Student Dashboard
             </h1>
-            <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-gray-600 hover:text-primary-500">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-secondary-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  2
-                </span>
-              </button>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search courses..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -111,7 +128,7 @@ const StudentDashboard: React.FC = () => {
               Continue Learning
             </button>
           </div>
-          
+
           {/* Background decoration */}
           <div className="absolute top-4 right-8 opacity-20">
             <Trophy className="h-24 w-24" />
@@ -123,8 +140,12 @@ const StudentDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-body text-gray-600 mb-1">Enrolled Courses</p>
-                <p className="text-3xl font-headline font-bold text-primary-500">{stats.enrolledCourses}</p>
+                <p className="text-sm font-body text-gray-600 mb-1">
+                  Enrolled Courses
+                </p>
+                <p className="text-3xl font-headline font-bold text-primary-500">
+                  {stats.enrolledCourses}
+                </p>
               </div>
               <div className="bg-primary-100 p-3 rounded-lg">
                 <BookOpen className="h-6 w-6 text-primary-500" />
@@ -135,8 +156,12 @@ const StudentDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-body text-gray-600 mb-1">Completed</p>
-                <p className="text-3xl font-headline font-bold text-green-600">{stats.completedCourses}</p>
+                <p className="text-sm font-body text-gray-600 mb-1">
+                  Completed
+                </p>
+                <p className="text-3xl font-headline font-bold text-green-600">
+                  {stats.completedCourses}
+                </p>
               </div>
               <div className="bg-green-100 p-3 rounded-lg">
                 <Trophy className="h-6 w-6 text-green-600" />
@@ -147,8 +172,12 @@ const StudentDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-body text-gray-600 mb-1">Certificates</p>
-                <p className="text-3xl font-headline font-bold text-secondary-500">{stats.certificatesEarned}</p>
+                <p className="text-sm font-body text-gray-600 mb-1">
+                  Certificates
+                </p>
+                <p className="text-3xl font-headline font-bold text-secondary-500">
+                  {stats.certificatesEarned}
+                </p>
               </div>
               <div className="bg-secondary-100 p-3 rounded-lg">
                 <Award className="h-6 w-6 text-secondary-500" />
@@ -159,8 +188,12 @@ const StudentDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-body text-gray-600 mb-1">Study Hours</p>
-                <p className="text-3xl font-headline font-bold text-tech-500">{stats.studyHours}</p>
+                <p className="text-sm font-body text-gray-600 mb-1">
+                  Study Hours
+                </p>
+                <p className="text-3xl font-headline font-bold text-tech-500">
+                  {stats.studyHours}
+                </p>
               </div>
               <div className="bg-tech-100 p-3 rounded-lg">
                 <Clock className="h-6 w-6 text-tech-500" />
@@ -176,7 +209,9 @@ const StudentDashboard: React.FC = () => {
             {/* Continue Learning */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-headline font-bold text-gray-900">Continue Learning</h3>
+                <h3 className="text-xl font-headline font-bold text-gray-900">
+                  Continue Learning
+                </h3>
                 <button className="text-primary-500 hover:text-primary-600 font-body font-medium">
                   View All
                 </button>
@@ -184,17 +219,24 @@ const StudentDashboard: React.FC = () => {
 
               <div className="space-y-4">
                 {recentCourses.map((course) => (
-                  <div key={course.id} className="flex items-center space-x-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div
+                    key={course.id}
+                    className="flex items-center space-x-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
                     <img
                       src={course.thumbnail}
                       alt={course.title}
                       className="w-20 h-14 object-cover rounded-lg"
                     />
-                    
+
                     <div className="flex-1">
-                      <h4 className="font-body font-semibold text-gray-900 mb-1">{course.title}</h4>
-                      <p className="text-sm text-gray-600 font-body mb-2">by {course.instructor}</p>
-                      
+                      <h4 className="font-body font-semibold text-gray-900 mb-1">
+                        {course.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 font-body mb-2">
+                        by {course.instructor}
+                      </p>
+
                       {/* Progress Bar */}
                       <div className="flex items-center space-x-3">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -203,17 +245,31 @@ const StudentDashboard: React.FC = () => {
                             style={{ width: `${course.progress}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm font-body text-gray-600">{course.progress}%</span>
+                        <span className="text-sm font-body text-gray-600">
+                          {course.progress}%
+                        </span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-sm font-body text-gray-600 mb-1">Next:</p>
-                      <p className="text-sm font-body font-semibold text-gray-900 mb-1">{course.nextLesson}</p>
-                      <p className="text-xs text-gray-500 font-body">{course.duration}</p>
+                      <p className="text-sm font-body text-gray-600 mb-1">
+                        Next:
+                      </p>
+                      <p className="text-sm font-body font-semibold text-gray-900 mb-1">
+                        {course.nextLesson}
+                      </p>
+                      <p className="text-xs text-gray-500 font-body">
+                        {course.duration}
+                      </p>
                     </div>
 
-                    <button className="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg transition-colors">
+                    <button
+                      onClick={() => {
+                        // Navigate to course details or lesson player
+                        console.log("Continue learning:", course.title);
+                      }}
+                      className="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg transition-colors"
+                    >
                       <Play className="h-4 w-4" />
                     </button>
                   </div>
@@ -223,25 +279,33 @@ const StudentDashboard: React.FC = () => {
 
             {/* Recent Activity */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">Recent Activity</h3>
-              
+              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">
+                Recent Activity
+              </h3>
+
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <div className="bg-green-100 p-2 rounded-full">
                     <Trophy className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-body font-semibold text-gray-900">Completed "React Fundamentals" course</p>
-                    <p className="text-sm text-gray-600 font-body">2 hours ago</p>
+                    <p className="font-body font-semibold text-gray-900">
+                      Completed "React Fundamentals" course
+                    </p>
+                    <p className="text-sm text-gray-600 font-body">
+                      2 hours ago
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start space-x-3">
                   <div className="bg-tech-100 p-2 rounded-full">
                     <Star className="h-4 w-4 text-tech-500" />
                   </div>
                   <div>
-                    <p className="font-body font-semibold text-gray-900">Earned 95% on JavaScript Quiz</p>
+                    <p className="font-body font-semibold text-gray-900">
+                      Earned 95% on JavaScript Quiz
+                    </p>
                     <p className="text-sm text-gray-600 font-body">1 day ago</p>
                   </div>
                 </div>
@@ -251,8 +315,12 @@ const StudentDashboard: React.FC = () => {
                     <BookOpen className="h-4 w-4 text-secondary-500" />
                   </div>
                   <div>
-                    <p className="font-body font-semibold text-gray-900">Started "Digital Marketing Mastery"</p>
-                    <p className="text-sm text-gray-600 font-body">3 days ago</p>
+                    <p className="font-body font-semibold text-gray-900">
+                      Started "Digital Marketing Mastery"
+                    </p>
+                    <p className="text-sm text-gray-600 font-body">
+                      3 days ago
+                    </p>
                   </div>
                 </div>
               </div>
@@ -263,19 +331,35 @@ const StudentDashboard: React.FC = () => {
           <div className="space-y-8">
             {/* Upcoming Deadlines */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">Upcoming Deadlines</h3>
-              
+              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">
+                Upcoming Deadlines
+              </h3>
+
               <div className="space-y-4">
                 {upcomingDeadlines.map((deadline, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-3 h-3 rounded-full ${
-                      deadline.priority === 'high' ? 'bg-red-500' :
-                      deadline.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}></div>
+                  <div
+                    key={index}
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        deadline.priority === "high"
+                          ? "bg-red-500"
+                          : deadline.priority === "medium"
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
+                    ></div>
                     <div className="flex-1">
-                      <p className="font-body font-semibold text-gray-900 text-sm">{deadline.assignment}</p>
-                      <p className="text-xs text-gray-600 font-body">{deadline.course}</p>
-                      <p className="text-xs text-gray-500 font-body">{deadline.dueDate}</p>
+                      <p className="font-body font-semibold text-gray-900 text-sm">
+                        {deadline.assignment}
+                      </p>
+                      <p className="text-xs text-gray-600 font-body">
+                        {deadline.course}
+                      </p>
+                      <p className="text-xs text-gray-500 font-body">
+                        {deadline.dueDate}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -284,21 +368,34 @@ const StudentDashboard: React.FC = () => {
 
             {/* Achievements */}
             <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">Achievements</h3>
-              
+              <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">
+                Achievements
+              </h3>
+
               <div className="space-y-4">
                 {achievements.map((achievement, index) => (
-                  <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg ${
-                    achievement.earned ? 'bg-secondary-50 border border-secondary-200' : 'bg-gray-50'
-                  }`}>
+                  <div
+                    key={index}
+                    className={`flex items-center space-x-3 p-3 rounded-lg ${
+                      achievement.earned
+                        ? "bg-secondary-50 border border-secondary-200"
+                        : "bg-gray-50"
+                    }`}
+                  >
                     <div className="text-2xl">{achievement.icon}</div>
                     <div className="flex-1">
-                      <p className={`font-body font-semibold text-sm ${
-                        achievement.earned ? 'text-secondary-700' : 'text-gray-600'
-                      }`}>
+                      <p
+                        className={`font-body font-semibold text-sm ${
+                          achievement.earned
+                            ? "text-secondary-700"
+                            : "text-gray-600"
+                        }`}
+                      >
                         {achievement.title}
                       </p>
-                      <p className="text-xs text-gray-600 font-body">{achievement.description}</p>
+                      <p className="text-xs text-gray-600 font-body">
+                        {achievement.description}
+                      </p>
                     </div>
                     {achievement.earned && (
                       <div className="bg-secondary-500 text-white p-1 rounded-full">
@@ -314,8 +411,12 @@ const StudentDashboard: React.FC = () => {
             <div className="bg-gradient-to-br from-accent-500 to-secondary-500 rounded-xl p-6 text-white">
               <div className="text-center">
                 <div className="text-4xl mb-2">🔥</div>
-                <p className="text-2xl font-headline font-bold mb-1">7 Day Streak!</p>
-                <p className="text-accent-100 font-body">Keep it up! You're on fire!</p>
+                <p className="text-2xl font-headline font-bold mb-1">
+                  7 Day Streak!
+                </p>
+                <p className="text-accent-100 font-body">
+                  Keep it up! You're on fire!
+                </p>
               </div>
             </div>
           </div>

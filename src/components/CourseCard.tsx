@@ -26,9 +26,11 @@ interface Course {
 interface CourseCardProps {
   course: Course;
   layout?: 'grid' | 'list';
+  onCourseClick?: (course: Course) => void;
+  onEnrollClick?: (course: Course) => void;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid', onCourseClick, onEnrollClick }) => {
   const {
     title,
     description,
@@ -55,9 +57,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
   };
 
   const gridLayout = (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group cursor-pointer">
       {/* Thumbnail */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden" onClick={() => onCourseClick?.(course)}>
         <img 
           src={thumbnail} 
           alt={title}
@@ -101,7 +103,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6" onClick={() => onCourseClick?.(course)}>
         {/* Category */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-primary-500 text-sm font-body font-semibold uppercase tracking-wide">
@@ -174,7 +176,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
               </span>
             )}
           </div>
-          <button className="bg-secondary-500 hover:bg-secondary-600 text-white px-4 py-2 rounded-lg text-sm font-body font-semibold transition-colors">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEnrollClick?.(course);
+            }}
+            className="bg-secondary-500 hover:bg-secondary-600 text-white px-4 py-2 rounded-lg text-sm font-body font-semibold transition-colors"
+          >
             Enroll Now
           </button>
         </div>
@@ -183,10 +191,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
   );
 
   const listLayout = (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer">
       <div className="flex">
         {/* Thumbnail */}
-        <div className="relative w-64 h-48 flex-shrink-0 overflow-hidden">
+        <div className="relative w-64 h-48 flex-shrink-0 overflow-hidden" onClick={() => onCourseClick?.(course)}>
           <img 
             src={thumbnail} 
             alt={title}
@@ -216,7 +224,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6" onClick={() => onCourseClick?.(course)}>
           <div className="flex justify-between items-start mb-3">
             <span className="text-primary-500 text-sm font-body font-semibold uppercase tracking-wide">
               {category}
@@ -279,7 +287,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid' }) => {
                   )}
                 </div>
               </div>
-              <button className="bg-secondary-500 hover:bg-secondary-600 text-white px-6 py-2 rounded-lg font-body font-semibold transition-colors">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEnrollClick?.(course);
+                }}
+                className="bg-secondary-500 hover:bg-secondary-600 text-white px-6 py-2 rounded-lg font-body font-semibold transition-colors"
+              >
                 Enroll Now
               </button>
             </div>

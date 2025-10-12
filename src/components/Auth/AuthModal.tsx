@@ -1,51 +1,67 @@
-import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, Facebook, Chrome } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState } from "react";
+import {
+  X,
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  Facebook,
+  Chrome,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: 'login' | 'register';
+  initialMode?: "login" | "register";
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
-  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  initialMode = "login",
+}) => {
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'student' as 'student' | 'instructor',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "student" as "student" | "instructor",
     agreeToTerms: false,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const { login, register } = useAuth();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]:
+        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      if (mode === 'login') {
+      if (mode === "login") {
         await login(formData.email, formData.password);
       } else {
         if (formData.password !== formData.confirmPassword) {
-          throw new Error('Passwords do not match');
+          throw new Error("Passwords do not match");
         }
         if (!formData.agreeToTerms) {
-          throw new Error('Please agree to the terms and conditions');
+          throw new Error("Please agree to the terms and conditions");
         }
         await register({
           name: formData.name,
@@ -56,7 +72,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -78,7 +94,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
           <div className="bg-white px-6 pt-6 pb-4">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-headline font-bold text-gray-900">
-                {mode === 'login' ? 'Welcome Back' : 'Join Edges Africa'}
+                {mode === "login" ? "Welcome Back" : "Join Edges Africa"}
               </h3>
               <button
                 onClick={onClose}
@@ -88,34 +104,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               </button>
             </div>
             <p className="text-gray-600 font-body mt-1">
-              {mode === 'login' 
-                ? 'Sign in to continue your learning journey' 
-                : 'Create your account and start learning today'
-              }
+              {mode === "login"
+                ? "Sign in to continue your learning journey"
+                : "Create your account and start learning today"}
             </p>
-          </div>
-
-          {/* Social Login */}
-          <div className="px-6 mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Chrome className="h-5 w-5 text-red-500 mr-2" />
-                <span className="text-sm font-body font-medium text-gray-700">Google</span>
-              </button>
-              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <Facebook className="h-5 w-5 text-blue-600 mr-2" />
-                <span className="text-sm font-body font-medium text-gray-700">Facebook</span>
-              </button>
-            </div>
-            
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500 font-body">Or continue with email</span>
-              </div>
-            </div>
           </div>
 
           {/* Form */}
@@ -127,10 +119,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
             )}
 
             <div className="space-y-4">
-              {mode === 'register' && (
+              {mode === "register" && (
                 <>
                   <div>
-                    <label htmlFor="name" className="block text-sm font-body font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-body font-medium text-gray-700 mb-1"
+                    >
                       Full Name
                     </label>
                     <div className="relative">
@@ -149,7 +144,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   </div>
 
                   <div>
-                    <label htmlFor="role" className="block text-sm font-body font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="role"
+                      className="block text-sm font-body font-medium text-gray-700 mb-1"
+                    >
                       I want to
                     </label>
                     <select
@@ -167,7 +165,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-body font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-body font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <div className="relative">
@@ -186,7 +187,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-body font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-body font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -194,7 +198,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
                     onChange={handleInputChange}
@@ -206,14 +210,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
 
-              {mode === 'register' && (
+              {mode === "register" && (
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-body font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-body font-medium text-gray-700 mb-1"
+                  >
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -232,7 +243,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                 </div>
               )}
 
-              {mode === 'login' && (
+              {mode === "login" && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <input
@@ -241,17 +252,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                       type="checkbox"
                       className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="remember" className="ml-2 block text-sm text-gray-700 font-body">
+                    <label
+                      htmlFor="remember"
+                      className="ml-2 block text-sm text-gray-700 font-body"
+                    >
                       Remember me
                     </label>
                   </div>
-                  <a href="#" className="text-sm font-body text-primary-500 hover:text-primary-600">
+                  <a
+                    href="#"
+                    className="text-sm font-body text-primary-500 hover:text-primary-600"
+                  >
                     Forgot password?
                   </a>
                 </div>
               )}
 
-              {mode === 'register' && (
+              {mode === "register" && (
                 <div className="flex items-start">
                   <input
                     id="agreeToTerms"
@@ -261,13 +278,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
                     onChange={handleInputChange}
                     className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded mt-0.5"
                   />
-                  <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-700 font-body">
-                    I agree to the{' '}
-                    <a href="#" className="text-primary-500 hover:text-primary-600">
+                  <label
+                    htmlFor="agreeToTerms"
+                    className="ml-2 block text-sm text-gray-700 font-body"
+                  >
+                    I agree to the{" "}
+                    <a
+                      href="#"
+                      className="text-primary-500 hover:text-primary-600"
+                    >
                       Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a href="#" className="text-primary-500 hover:text-primary-600">
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href="#"
+                      className="text-primary-500 hover:text-primary-600"
+                    >
                       Privacy Policy
                     </a>
                   </label>
@@ -280,22 +306,51 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
               disabled={loading}
               className="w-full mt-6 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-body font-semibold transition-colors"
             >
-              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              {loading
+                ? "Please wait..."
+                : mode === "login"
+                ? "Sign In"
+                : "Create Account"}
             </button>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 font-body">
-                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                {mode === "login"
+                  ? "Don't have an account?"
+                  : "Already have an account?"}{" "}
                 <button
                   type="button"
-                  onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                  onClick={() =>
+                    setMode(mode === "login" ? "register" : "login")
+                  }
                   className="text-primary-500 hover:text-primary-600 font-medium"
                 >
-                  {mode === 'login' ? 'Sign up' : 'Sign in'}
+                  {mode === "login" ? "Sign up" : "Sign in"}
                 </button>
               </p>
             </div>
           </form>
+            {/* Social Login */}
+            <div className="px-6 mb-6">
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500 font-body">
+                    Or continue with email
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols gap-3">
+                <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <Chrome className="h-5 w-5 text-red-500 mr-2" />
+                  <span className="text-sm font-body font-medium text-gray-700">
+                    Google
+                  </span>
+                </button>
+              </div>
+            </div>
         </div>
       </div>
     </div>

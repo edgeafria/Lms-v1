@@ -1,5 +1,15 @@
-import React from 'react';
-import { BookOpen, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react';
+import React from "react";
+import {
+  BookOpen,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube,
+} from "lucide-react";
 
 const Footer: React.FC = () => {
   return (
@@ -20,59 +30,87 @@ const Footer: React.FC = () => {
                 <p className="text-sm text-primary-200">C 2025</p>
               </div>
             </div>
-            
+
             <p className="text-primary-200 font-body mb-6 leading-relaxed">
-              Empowering African minds with world-class education. Learn skills that matter, 
-              build projects that count, and advance your career with us.
+              EDGES Africa is a pan-African social enterprise helping people
+              thrive in a climate-resilient, tech-enabled future.We make climate
+              education simple, practical, and accessible — using mobile,
+              WhatsApp, and local languages.
             </p>
 
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-secondary-500" />
-                <span className="text-primary-200 font-body">hello@edgesafrica.com</span>
+                <span className="text-primary-200 font-body">
+                  hello@edgesafrica.com
+                </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-secondary-500" />
-                <span className="text-primary-200 font-body">+234 800 123 4567</span>
+                <span className="text-primary-200 font-body">
+                  +234 800 123 4567
+                </span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-secondary-500" />
-                <span className="text-primary-200 font-body">Lagos, Nigeria</span>
+                <span className="text-primary-200 font-body">
+                  Lagos, Nigeria
+                </span>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-headline font-bold text-white mb-6">Quick Links</h3>
+            <h3 className="text-lg font-headline font-bold text-white mb-6">
+              Quick Links
+            </h3>
             <ul className="space-y-3">
               <li>
-                <a href="#courses" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#courses"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Browse Courses
                 </a>
               </li>
               <li>
-                <a href="#instructors" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#instructors"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Our Instructors
                 </a>
               </li>
               <li>
-                <a href="#about" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#about"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   About Us
                 </a>
               </li>
               <li>
-                <a href="#careers" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#careers"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Careers
                 </a>
               </li>
               <li>
-                <a href="#blog" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#blog"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Blog
                 </a>
               </li>
               <li>
-                <a href="#help" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#help"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Help Center
                 </a>
               </li>
@@ -81,35 +119,55 @@ const Footer: React.FC = () => {
 
           {/* Categories */}
           <div>
-            <h3 className="text-lg font-headline font-bold text-white mb-6">Popular Categories</h3>
+            <h3 className="text-lg font-headline font-bold text-white mb-6">
+              Popular Categories
+            </h3>
             <ul className="space-y-3">
               <li>
-                <a href="#web-development" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#web-development"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Web Development
                 </a>
               </li>
               <li>
-                <a href="#mobile-development" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#mobile-development"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Mobile Development
                 </a>
               </li>
               <li>
-                <a href="#data-science" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#data-science"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Data Science
                 </a>
               </li>
               <li>
-                <a href="#digital-marketing" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#digital-marketing"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Digital Marketing
                 </a>
               </li>
               <li>
-                <a href="#business" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#business"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Business
                 </a>
               </li>
               <li>
-                <a href="#design" className="text-primary-200 hover:text-white font-body transition-colors">
+                <a
+                  href="#design"
+                  className="text-primary-200 hover:text-white font-body transition-colors"
+                >
                   Design
                 </a>
               </li>
@@ -118,11 +176,13 @@ const Footer: React.FC = () => {
 
           {/* Newsletter */}
           <div>
-            <h3 className="text-lg font-headline font-bold text-white mb-6">Stay Updated</h3>
+            <h3 className="text-lg font-headline font-bold text-white mb-6">
+              Stay Updated
+            </h3>
             <p className="text-primary-200 font-body mb-4">
               Get the latest courses, tips, and news delivered to your inbox.
             </p>
-            
+
             <form className="space-y-3">
               <input
                 type="email"
@@ -186,20 +246,31 @@ const Footer: React.FC = () => {
                 © 2025 Edges Africa C. All rights reserved.
               </p>
               <div className="flex space-x-4">
-                <a href="#privacy" className="text-primary-200 hover:text-white font-body text-sm transition-colors">
+                <a
+                  href="#privacy"
+                  className="text-primary-200 hover:text-white font-body text-sm transition-colors"
+                >
                   Privacy Policy
                 </a>
-                <a href="#terms" className="text-primary-200 hover:text-white font-body text-sm transition-colors">
+                <a
+                  href="#terms"
+                  className="text-primary-200 hover:text-white font-body text-sm transition-colors"
+                >
                   Terms of Service
                 </a>
-                <a href="#cookies" className="text-primary-200 hover:text-white font-body text-sm transition-colors">
+                <a
+                  href="#cookies"
+                  className="text-primary-200 hover:text-white font-body text-sm transition-colors"
+                >
                   Cookie Policy
                 </a>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-primary-200 font-body text-sm">Made with ❤️ in Africa</span>
+              <span className="text-primary-200 font-body text-sm">
+                Made with ❤️ in Africa
+              </span>
               <div className="flex items-center space-x-2">
                 <img
                   src="https://images.pexels.com/photos/1029243/pexels-photo-1029243.jpeg"
