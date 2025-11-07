@@ -3,57 +3,59 @@ name: Deploy to VPS
 on:
   push:
     branches:
-      - main  # deploy only when main updates
+      - main # deploy only when main updates
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.VPS_IP_ADDRESS }}
-        username: root
-        key: ${{ secrets.VPS_SSH_KEY }}
-        port: 22
-        script: |
-          cd /var/www/Lms-v1
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP_ADDRESS }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            cd /var/www/Lms-v1
 
-          echo "🧾 Creating frontend .env file..."
-          cat <<EOF > .env
-          VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-          VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
-          EOF
+            echo "🧾 Creating frontend .env file..."
+            cat <<EOF > .env
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+            EOF
 
-          echo "🧾 Creating backend .env file..."
-          cat <<EOF > backend/.env
-          PORT=${{ secrets.PORT }}
-          NODE_ENV=${{ secrets.NODE_ENV }}
-          MONGODB_URI=${{ secrets.MONGODB_URI }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_EXPIRE=${{ secrets.JWT_EXPIRE }}
-          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-          JWT_REFRESH_EXPIRE=${{ secrets.JWT_REFRESH_EXPIRE }}
-          FROM_EMAIL=${{ secrets.FROM_EMAIL }}
-          FROM_NAME=${{ secrets.FROM_NAME }}
-          SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
-          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }}
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CLIENT_URL=${{ secrets.CLIENT_URL }}
-          MAX_FILE_SIZE=${{ secrets.MAX_FILE_SIZE }}
-          ALLOWED_FILE_TYPES=${{ secrets.ALLOWED_FILE_TYPES }}
-          EOF
+            echo "🧾 Creating backend .env file..."
+            cd backend
+            cat <<EOF > .env
+            PORT=${{ secrets.PORT }}
+            NODE_ENV=${{ secrets.NODE_ENV }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRE=${{ secrets.JWT_EXPIRE }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            JWT_REFRESH_EXPIRE=${{ secrets.JWT_REFRESH_EXPIRE }}
+            FROM_EMAIL=${{ secrets.FROM_EMAIL }}
+            FROM_NAME=${{ secrets.FROM_NAME }}
+            SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+            CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+            CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+            CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            CLIENT_URL=${{ secrets.CLIENT_URL }}
+            MAX_FILE_SIZE=${{ secrets.MAX_FILE_SIZE }}
+            ALLOWED_FILE_TYPES=${{ secrets.ALLOWED_FILE_TYPES }}
+            EOF
 
-          echo "🚀 Running deploy script..."
-          chmod +x deploy.sh
-          ./deploy.sh
+            echo "🚀 Running deploy script..."
+            cd ../..
+            chmod +x deploy.sh
+            ./deploy.sh
