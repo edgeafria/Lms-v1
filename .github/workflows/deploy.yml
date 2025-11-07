@@ -60,4 +60,4 @@ jobs:
             cd /var/www
             chmod +x deploy.sh
             ./deploy.sh
-            echo "✅ Deployment completed."
+            # echo "✅ Deployment completed."
