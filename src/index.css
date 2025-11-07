@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* .video-js .vjs-control-bar {
+  z-index: 2 !important;
+}
+.video-js .vjs-tech {
+  pointer-events: none !important;
+} */

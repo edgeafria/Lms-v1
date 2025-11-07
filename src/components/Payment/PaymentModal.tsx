@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { X, CreditCard, Shield, Lock } from 'lucide-react';
+import { X, Shield, Lock } from 'lucide-react';
+import axios from 'axios'; // Import axios for API calls
+// Corrected import path
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   course: {
-    id: string;
+    id: string; // This is the course._id
     title: string;
     price: number;
     thumbnail: string;
@@ -16,11 +19,15 @@ interface PaymentModalProps {
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, onPaymentSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paystack'>('paystack');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State for API errors
   const [formData, setFormData] = useState({
     email: '',
     name: '',
     phone: ''
   });
+
+  const { token } = useAuth(); // Get the authentication token from context
+  const API_BASE_URL = 'http://localhost:5000/api'; // Backend URL
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -34,52 +41,68 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Updated handlePayment function to call the backend
   const handlePayment = async () => {
     setLoading(true);
-    
+    setError(null);
+
+    // Validate essential form fields (email/name are used by backend/Paystack)
+    if (!formData.email || !formData.name) {
+         setError("Full Name and Email Address are required.");
+         setLoading(false);
+         return;
+    }
+
     try {
-      if (paymentMethod === 'paystack') {
-        // Initialize Paystack payment
-        const handler = (window as any).PaystackPop.setup({
-          key: 'pk_test_your_paystack_public_key', // Replace with your Paystack public key
-          email: formData.email,
-          amount: course.price * 100, // Paystack expects amount in kobo
-          currency: 'NGN',
-          ref: `course_${course.id}_${Date.now()}`,
-          metadata: {
-            course_id: course.id,
-            course_title: course.title,
-            student_name: formData.name,
-            student_phone: formData.phone
+      // Call your backend's create-intent endpoint
+      const response = await axios.post(
+        `${API_BASE_URL}/payments/create-intent`,
+        {
+          courseId: course.id, // Pass the course ID
+          paymentMethod: paymentMethod,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Send the user's auth token
           },
-          callback: function(response: any) {
-            // Payment successful
-            console.log('Payment successful:', response);
-            onPaymentSuccess();
-            onClose();
-          },
-          onClose: function() {
-            setLoading(false);
-          }
-        });
-        handler.openIframe();
-      } else {
-        // Initialize Stripe payment
-        // This would typically involve creating a payment intent on your backend
-        // and using Stripe Elements for card collection
-        
-        // For demo purposes, we'll simulate a successful payment
-        setTimeout(() => {
-          onPaymentSuccess();
-          onClose();
+        }
+      );
+
+      if (response.data.success && response.data.data) {
+        // --- Handle Paystack ---
+        if (paymentMethod === 'paystack' && response.data.data.authorizationUrl) {
+          // Redirect the user to Paystack's checkout page
+          console.log("Redirecting to Paystack:", response.data.data.authorizationUrl);
+          window.location.href = response.data.data.authorizationUrl;
+          // User leaves site, loading state doesn't need to be reset here
+        }
+        // --- Handle Stripe ---
+        else if (paymentMethod === 'stripe' && response.data.data.clientSecret) {
+          // TODO: Implement Stripe Elements flow
+          console.log("Stripe client secret received:", response.data.data.clientSecret);
+          setError('Stripe integration not yet complete. Please use Paystack.');
           setLoading(false);
-        }, 2000);
+        } else {
+          throw new Error('Invalid response from payment gateway.');
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to initialize payment.');
       }
-    } catch (error) {
-      console.error('Payment error:', error);
+    } catch (err) {
+      console.error('Payment initialization error:', err);
+      let errorMessage = 'An error occurred while starting the payment.';
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+      } else if (err instanceof Error) {
+          errorMessage = err.message;
+      }
+      setError(errorMessage);
       setLoading(false);
     }
   };
+
+  // Note: onPaymentSuccess() is not called here,
+  // as confirmation happens via webhook or when user returns to the site.
 
   if (!isOpen) return null;
 
@@ -87,7 +110,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={onClose}>
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
@@ -115,9 +138,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
                 src={course.thumbnail}
                 alt={course.title}
                 className="w-16 h-12 object-cover rounded"
+                onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/150x100?text=Course`; }}
               />
               <div className="flex-1">
-                <h4 className="font-body font-semibold text-gray-900">{course.title}</h4>
+                <h4 className="font-body font-semibold text-gray-900 line-clamp-1">{course.title}</h4>
                 <p className="text-2xl font-headline font-bold text-primary-500">
                   {formatPrice(course.price)}
                 </p>
@@ -128,10 +152,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
           {/* Payment Form */}
           <div className="px-6 pb-6">
             <form onSubmit={(e) => { e.preventDefault(); handlePayment(); }} className="space-y-6">
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
+                  <p className="text-sm font-body">{error}</p>
+                </div>
+              )}
+
               {/* Student Information */}
               <div className="space-y-4">
                 <h4 className="font-body font-semibold text-gray-900">Student Information</h4>
-                
                 <div>
                   <label className="block text-sm font-body font-medium text-gray-700 mb-2">
                     Full Name *
@@ -146,7 +177,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
                     placeholder="Enter your full name"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-body font-medium text-gray-700 mb-2">
                     Email Address *
@@ -161,7 +191,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
                     placeholder="Enter your email"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-body font-medium text-gray-700 mb-2">
                     Phone Number
@@ -180,7 +209,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
               {/* Payment Method Selection */}
               <div className="space-y-4">
                 <h4 className="font-body font-semibold text-gray-900">Payment Method</h4>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
@@ -188,18 +216,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
                     className={`p-4 border-2 rounded-lg transition-colors ${
                       paymentMethod === 'paystack'
                         ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-300 hover:border-gray-400'
+                        : 'border-gray-300 hover:border-gray-400' // Corrected syntax here
                     }`}
                   >
                     <div className="text-center">
-                      <div className="bg-green-500 text-white w-8 h-8 rounded mx-auto mb-2 flex items-center justify-center font-body font-bold">
-                        P
-                      </div>
+                      <div className="bg-green-500 text-white w-8 h-8 rounded mx-auto mb-2 flex items-center justify-center font-body font-bold"> P </div>
                       <span className="font-body font-medium">Paystack</span>
                       <p className="text-xs text-gray-600 mt-1">Card, Bank Transfer, USSD</p>
                     </div>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('stripe')}
@@ -210,9 +235,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
                     }`}
                   >
                     <div className="text-center">
-                      <div className="bg-blue-500 text-white w-8 h-8 rounded mx-auto mb-2 flex items-center justify-center font-body font-bold">
-                        S
-                      </div>
+                      <div className="bg-blue-500 text-white w-8 h-8 rounded mx-auto mb-2 flex items-center justify-center font-body font-bold"> S </div>
                       <span className="font-body font-medium">Stripe</span>
                       <p className="text-xs text-gray-600 mt-1">Credit/Debit Cards</p>
                     </div>
@@ -237,7 +260,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
               <button
                 type="submit"
                 disabled={loading || !formData.name || !formData.email}
-                className="w-full bg-secondary-500 hover:bg-secondary-600 disabled:bg-gray-400 text-white py-4 px-6 rounded-lg font-body font-semibold transition-colors flex items-center justify-center space-x-2"
+                className="w-full bg-secondary-500 hover:bg-secondary-600 disabled:opacity-70 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-body font-semibold transition-colors flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>

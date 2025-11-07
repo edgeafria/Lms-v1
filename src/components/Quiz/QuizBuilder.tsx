@@ -1,28 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Edit, 
-  Save, 
-  Eye, 
-  Settings,
-  Clock,
-  CheckCircle,
-  Circle,
-  Square,
-  Type,
-  Image,
-  Move
+  Plus, Trash2, Edit, Save, Eye, Settings,
+  Clock, CheckCircle, Circle, Square, Type,
+  Image, Move, HelpCircle
 } from 'lucide-react';
+import { axiosInstance } from '../contexts/AuthContext'; // Assuming context is two levels up
+import axios from 'axios';
 
+// --- Interface Definitions ---
 interface QuizOption {
   id: string;
+  _id?: string;
   text: string;
   isCorrect: boolean;
 }
 
 interface QuizQuestion {
-  id: string;
+  id: string; // This is the local state ID (can be temp)
+  _id?: string; // This is the MongoDB _id
   type: 'multiple-choice' | 'true-false' | 'short-answer' | 'essay';
   question: string;
   options?: QuizOption[];
@@ -33,10 +28,11 @@ interface QuizQuestion {
 }
 
 interface QuizData {
-  id?: string;
+  id?: string; // The Quiz _id from backend
   title: string;
   description: string;
   courseId: string;
+  lessonId: string; // Lesson ID this quiz is attached to
   timeLimit: number; // in minutes, 0 = no limit
   attempts: number;
   passingScore: number;
@@ -47,11 +43,22 @@ interface QuizData {
   instructions: string;
 }
 
-const QuizBuilder: React.FC = () => {
+// --- Props for the Component ---
+interface QuizBuilderProps {
+    lessonId: string;
+    quizId?: string; // Existing quiz ID if we are editing
+    courseId: string;
+    onSave: (quizId: string) => void; // Function to call when quiz is saved
+    onCancel: () => void; // Function to call when modal is closed
+}
+// -----------------------------
+
+const QuizBuilder: React.FC<QuizBuilderProps> = ({ lessonId, quizId, courseId, onSave, onCancel }) => {
   const [quizData, setQuizData] = useState<QuizData>({
-    title: '',
+    title: 'New Quiz',
     description: '',
-    courseId: '',
+    courseId: courseId,
+    lessonId: lessonId,
     timeLimit: 0,
     attempts: 1,
     passingScore: 70,
@@ -64,20 +71,150 @@ const QuizBuilder: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('settings');
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
+  
+  // --- New State ---
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // For initial fetch
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  // -----------------
+
+  // --- Fetch Existing Quiz Data ---
+  useEffect(() => {
+    // If a quizId is provided, or if the lesson already has a quiz linked, fetch it.
+    // The new GET route handles finding the quiz *from* the lesson.
+    console.log(`QuizBuilder opening for Lesson ${lessonId} (Quiz ID: ${quizId})`);
+    setIsLoading(true);
+    axiosInstance.get(`/quizzes/lesson/${lessonId}`)
+        .then(response => {
+            const data = response.data.data;
+            if (data) {
+                console.log("Found existing quiz data:", data);
+                // Populate state with existing quiz data
+                setQuizData({
+                    id: data._id,
+                    title: data.title || 'New Quiz',
+                    description: data.description || '',
+                    courseId: data.course.toString(),
+                    lessonId: data.lesson.toString(),
+                    timeLimit: data.settings?.timeLimit || 0,
+                    attempts: data.settings?.attempts || 1,
+                    passingScore: data.settings?.passingScore || 70,
+                    shuffleQuestions: data.settings?.shuffleQuestions || false,
+                    shuffleOptions: data.settings?.shuffleOptions || false,
+                    showResults: data.settings?.showResults || 'after-submission',
+                    questions: data.questions.map((q: any) => ({ ...q, id: q._id, options: q.options.map((opt:any) => ({...opt, id: opt._id})) })), // Use _id as local id
+                    instructions: data.instructions || ''
+                });
+                // Select the first question
+                if (data.questions && data.questions.length > 0) {
+                     setSelectedQuestion(data.questions[0]._id);
+                }
+            } else {
+                console.log("No existing quiz found for this lesson.");
+                // No existing quiz, keep default state
+            }
+        })
+        .catch(err => {
+            console.error("Error fetching quiz data:", err);
+            setError("Failed to load quiz data. Please try again.");
+        })
+        .finally(() => {
+            setIsLoading(false);
+        });
+  }, [lessonId, quizId]); // Run when modal opens
+  // -----------------------------
+
+
+  // --- Save/Update Quiz Handler ---
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage(null);
+    setError(null);
+
+    // Basic validation
+    if (quizData.questions.length === 0) {
+        setError("Quiz must contain at least one question.");
+        setActiveTab('questions');
+        setIsSaving(false);
+        return;
+    }
+    if (quizData.title.length < 3) {
+        setError("Quiz Title must be at least 3 characters.");
+        setActiveTab('settings');
+        setIsSaving(false);
+        return;
+    }
+    
+    // Convert local questions array back to backend structure
+    const backendQuestions = quizData.questions.map(q => ({
+        ...q,
+        _id: q._id?.startsWith('temp_') ? undefined : q._id, // Send existing _id if present
+        id: undefined, // Remove local 'id'
+        options: q.options?.map(opt => ({
+             ...opt,
+             _id: opt.id.startsWith('temp_') ? undefined : opt.id,
+             id: undefined,
+        }))
+    }));
+
+    const dataToSend = {
+        title: quizData.title,
+        description: quizData.description,
+        course: quizData.courseId,
+        lesson: quizData.lessonId,
+        existingQuizId: quizData.id, // Pass ID if updating
+        questions: backendQuestions,
+        instructions: quizData.instructions,
+        settings: {
+            timeLimit: quizData.timeLimit,
+            attempts: quizData.attempts,
+            passingScore: quizData.passingScore,
+            shuffleQuestions: quizData.shuffleQuestions,
+            shuffleOptions: quizData.shuffleOptions,
+            showResults: quizData.showResults,
+        }
+    };
+    
+    try {
+        // Use POST for both create and update
+        const response = await axiosInstance.post('/quizzes', dataToSend);
+        
+        if (response.data.success) {
+            const savedQuizId = response.data.data._id;
+            setMessage("Quiz saved successfully!");
+            // Notify parent component (CourseBuilderPage) of the new Quiz ID
+            onSave(savedQuizId);
+            // We can optionally close the modal here or let the user do it
+            // onCancel(); 
+        } else {
+            throw new Error(response.data.message);
+        }
+    } catch (err) {
+        console.error("Quiz Save Error:", err);
+        if (axios.isAxiosError(err)) {
+            setError(err.response?.data?.message || err.message);
+        } else if (err instanceof Error) {
+            setError(err.message);
+        }
+    } finally {
+        setIsSaving(false);
+    }
+  };
+  // -----------------------------
+
 
   const addQuestion = (type: QuizQuestion['type']) => {
     const newQuestion: QuizQuestion = {
-      id: Date.now().toString(),
+      id: `temp_${Date.now()}`,
       type,
       question: '',
       points: 1,
       order: quizData.questions.length,
       ...(type === 'multiple-choice' && {
         options: [
-          { id: '1', text: '', isCorrect: true },
-          { id: '2', text: '', isCorrect: false },
-          { id: '3', text: '', isCorrect: false },
-          { id: '4', text: '', isCorrect: false }
+          { id: `temp_${Date.now()+1}`, text: '', isCorrect: true },
+          { id: `temp_${Date.now()+2}`, text: '', isCorrect: false },
         ]
       }),
       ...(type === 'true-false' && {
@@ -125,7 +262,7 @@ const QuizBuilder: React.FC = () => {
     if (!question?.options) return;
 
     const newOption: QuizOption = {
-      id: Date.now().toString(),
+      id: `temp_${Date.now()}`,
       text: '',
       isCorrect: false
     };
@@ -147,7 +284,7 @@ const QuizBuilder: React.FC = () => {
 
   const deleteOption = (questionId: string, optionId: string) => {
     const question = quizData.questions.find(q => q.id === questionId);
-    if (!question?.options || question.options.length <= 2) return;
+    if (!question?.options || question.options.length <= 2) return; // Min 2 options
 
     updateQuestion(questionId, {
       options: question.options.filter(opt => opt.id !== optionId)
@@ -176,26 +313,11 @@ const QuizBuilder: React.FC = () => {
 
         <div>
           <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-            Course
-          </label>
-          <select
-            value={quizData.courseId}
-            onChange={(e) => setQuizData(prev => ({ ...prev, courseId: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Select Course</option>
-            <option value="1">Full-Stack Web Development</option>
-            <option value="2">Digital Marketing Mastery</option>
-            <option value="3">Data Science with Python</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-body font-medium text-gray-700 mb-2">
             Time Limit (minutes)
           </label>
           <input
             type="number"
+            min="0"
             value={quizData.timeLimit}
             onChange={(e) => setQuizData(prev => ({ ...prev, timeLimit: Number(e.target.value) }))}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -229,21 +351,6 @@ const QuizBuilder: React.FC = () => {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
-
-        <div>
-          <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-            Show Results
-          </label>
-          <select
-            value={quizData.showResults}
-            onChange={(e) => setQuizData(prev => ({ ...prev, showResults: e.target.value as any }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="immediately">Immediately</option>
-            <option value="after-submission">After Submission</option>
-            <option value="never">Never</option>
-          </select>
-        </div>
       </div>
 
       <div>
@@ -274,28 +381,27 @@ const QuizBuilder: React.FC = () => {
 
       <div className="space-y-4">
         <h4 className="font-body font-semibold text-gray-900">Quiz Options</h4>
-        
         <div className="space-y-3">
           <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={quizData.shuffleQuestions}
-              onChange={(e) => setQuizData(prev => ({ ...prev, shuffleQuestions: e.target.checked }))}
-              className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-            />
+            <input type="checkbox" checked={quizData.shuffleQuestions} onChange={(e) => setQuizData(prev => ({ ...prev, shuffleQuestions: e.target.checked }))} className="rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
             <span className="font-body text-gray-700">Shuffle Questions</span>
           </label>
-
           <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={quizData.shuffleOptions}
-              onChange={(e) => setQuizData(prev => ({ ...prev, shuffleOptions: e.target.checked }))}
-              className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-            />
+            <input type="checkbox" checked={quizData.shuffleOptions} onChange={(e) => setQuizData(prev => ({ ...prev, shuffleOptions: e.target.checked }))} className="rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
             <span className="font-body text-gray-700">Shuffle Answer Options</span>
           </label>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+            Show Results
+        </label>
+        <select value={quizData.showResults} onChange={(e) => setQuizData(prev => ({ ...prev, showResults: e.target.value as any }))} className="w-full md:w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="immediately">Immediately</option>
+            <option value="after-submission">After Submission</option>
+            <option value="never">Never</option>
+        </select>
       </div>
     </div>
   );
@@ -312,30 +418,10 @@ const QuizBuilder: React.FC = () => {
             </button>
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
               <div className="py-1">
-                <button
-                  onClick={() => addQuestion('multiple-choice')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"
-                >
-                  Multiple Choice
-                </button>
-                <button
-                  onClick={() => addQuestion('true-false')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"
-                >
-                  True/False
-                </button>
-                <button
-                  onClick={() => addQuestion('short-answer')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"
-                >
-                  Short Answer
-                </button>
-                <button
-                  onClick={() => addQuestion('essay')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"
-                >
-                  Essay
-                </button>
+                <button onClick={() => addQuestion('multiple-choice')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"> Multiple Choice </button>
+                <button onClick={() => addQuestion('true-false')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"> True/False </button>
+                <button onClick={() => addQuestion('short-answer')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"> Short Answer </button>
+                <button onClick={() => addQuestion('essay')} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body"> Essay </button>
               </div>
             </div>
           </div>
@@ -417,125 +503,6 @@ const QuizBuilder: React.FC = () => {
     </div>
   );
 
-  const QuestionEditor: React.FC<{
-    question: QuizQuestion;
-    onUpdate: (updates: Partial<QuizQuestion>) => void;
-    onUpdateOption: (optionId: string, updates: Partial<QuizOption>) => void;
-    onAddOption: () => void;
-    onDeleteOption: (optionId: string) => void;
-  }> = ({ question, onUpdate, onUpdateOption, onAddOption, onDeleteOption }) => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-headline font-bold text-gray-900">Edit Question</h3>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600 font-body">Points:</span>
-          <input
-            type="number"
-            min="1"
-            value={question.points}
-            onChange={(e) => onUpdate({ points: Number(e.target.value) })}
-            className="w-16 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-          Question *
-        </label>
-        <textarea
-          rows={3}
-          value={question.question}
-          onChange={(e) => onUpdate({ question: e.target.value })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          placeholder="Enter your question here"
-        />
-      </div>
-
-      {(question.type === 'multiple-choice' || question.type === 'true-false') && question.options && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="block text-sm font-body font-medium text-gray-700">
-              Answer Options
-            </label>
-            {question.type === 'multiple-choice' && (
-              <button
-                onClick={onAddOption}
-                className="text-primary-500 hover:text-primary-600 text-sm font-body font-medium flex items-center space-x-1"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Option</span>
-              </button>
-            )}
-          </div>
-          
-          <div className="space-y-3">
-            {question.options.map((option, index) => (
-              <div key={option.id} className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  name={`correct-${question.id}`}
-                  checked={option.isCorrect}
-                  onChange={() => {
-                    // For multiple choice, only one option can be correct
-                    question.options?.forEach(opt => {
-                      onUpdateOption(opt.id, { isCorrect: opt.id === option.id });
-                    });
-                  }}
-                  className="text-primary-500 focus:ring-primary-500"
-                />
-                <input
-                  type="text"
-                  value={option.text}
-                  onChange={(e) => onUpdateOption(option.id, { text: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder={`Option ${index + 1}`}
-                  disabled={question.type === 'true-false'}
-                />
-                {question.type === 'multiple-choice' && question.options.length > 2 && (
-                  <button
-                    onClick={() => onDeleteOption(option.id)}
-                    className="text-red-500 hover:text-red-600 p-1"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(question.type === 'short-answer' || question.type === 'essay') && (
-        <div>
-          <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-            Sample Answer (for reference)
-          </label>
-          <textarea
-            rows={question.type === 'essay' ? 6 : 3}
-            value={question.correctAnswer || ''}
-            onChange={(e) => onUpdate({ correctAnswer: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Enter a sample answer or key points to look for"
-          />
-        </div>
-      )}
-
-      <div>
-        <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-          Explanation (optional)
-        </label>
-        <textarea
-          rows={3}
-          value={question.explanation || ''}
-          onChange={(e) => onUpdate({ explanation: e.target.value })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          placeholder="Explain why this is the correct answer"
-        />
-      </div>
-    </div>
-  );
-
   const renderPreview = () => (
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -586,67 +553,37 @@ const QuizBuilder: React.FC = () => {
                 <div className="ml-11 space-y-2">
                   {question.options.map((option, optIndex) => (
                     <label key={option.id} className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name={`preview-${question.id}`}
-                        className="text-primary-500 focus:ring-primary-500"
-                        disabled
-                      />
+                      <input type="radio" name={`preview-${question.id}`} className="text-primary-500 focus:ring-primary-500" disabled />
                       <span className="font-body text-gray-700">{option.text}</span>
-                      {option.isCorrect && (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      )}
+                      {option.isCorrect && ( <CheckCircle className="h-4 w-4 text-green-500" /> )}
                     </label>
                   ))}
                 </div>
               )}
-
               {question.type === 'true-false' && question.options && (
                 <div className="ml-11 space-y-2">
                   {question.options.map((option) => (
                     <label key={option.id} className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name={`preview-${question.id}`}
-                        className="text-primary-500 focus:ring-primary-500"
-                        disabled
-                      />
+                      <input type="radio" name={`preview-${question.id}`} className="text-primary-500 focus:ring-primary-500" disabled />
                       <span className="font-body text-gray-700">{option.text}</span>
-                      {option.isCorrect && (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      )}
+                      {option.isCorrect && ( <CheckCircle className="h-4 w-4 text-green-500" /> )}
                     </label>
                   ))}
                 </div>
               )}
-
               {question.type === 'short-answer' && (
                 <div className="ml-11">
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter your answer here"
-                    disabled
-                  />
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Enter your answer here" disabled />
                 </div>
               )}
-
               {question.type === 'essay' && (
                 <div className="ml-11">
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter your essay answer here"
-                    disabled
-                  />
+                  <textarea rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Enter your essay answer here" disabled />
                 </div>
               )}
-
               {question.explanation && (
                 <div className="ml-11 mt-3 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700 font-body">
-                    <strong>Explanation:</strong> {question.explanation}
-                  </p>
+                  <p className="text-sm text-gray-700 font-body"> <strong>Explanation:</strong> {question.explanation} </p>
                 </div>
               )}
             </div>
@@ -665,6 +602,14 @@ const QuizBuilder: React.FC = () => {
     </div>
   );
 
+  // --- Main Return ---
+  if (isLoading) {
+       return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-500"></div></div>;
+  }
+  if (loadError) {
+       return <div className="min-h-screen flex items-center justify-center p-8"><div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded shadow-md max-w-lg text-center" role="alert"><p className="font-bold">Error Loading Quiz</p><p>{loadError}</p></div></div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -676,13 +621,18 @@ const QuizBuilder: React.FC = () => {
               <p className="text-sm text-gray-600 font-body">Create and manage quiz assessments</p>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-body font-medium">
+              <button 
+                onClick={() => setActiveTab('preview')}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-body font-medium">
                 <Eye className="h-4 w-4" />
                 <span>Preview</span>
               </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-body font-medium">
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-body font-medium disabled:opacity-70 disabled:cursor-not-allowed">
                 <Save className="h-4 w-4" />
-                <span>Save Quiz</span>
+                <span>{isSaving ? "Saving..." : "Save Quiz"}</span>
               </button>
             </div>
           </div>

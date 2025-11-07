@@ -1,99 +1,203 @@
-import React from 'react';
-import Hero from '../components/Hero';
-import CourseCard from '../components/CourseCard';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // Import axios
+import { Link, useNavigate } from 'react-router-dom'; // Import Link
+import Hero from '../components/Hero'; // Assuming path is correct
+import CourseCard from '../components/CourseCard'; // Assuming path is correct
 import { Star } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+
+// --- Interface Definitions ---
+// Matches the data structure from your backend API
+interface BackendInstructor {
+    _id?: string;
+    name: string;
+    avatar?: { url?: string } | string;
+}
+interface BackendCourse {
+    _id: string;
+    title: string;
+    description: string;
+    instructor: BackendInstructor;
+    thumbnail?: { url?: string };
+    price: number;
+    originalPrice?: number;
+    duration?: string;
+    studentsCount?: number;
+    rating?: { average?: number; count?: number };
+    reviewsCount?: number;
+    level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+    category: string;
+    tags?: string[];
+    isFeatured?: boolean;
+    isNew?: boolean;
+    slug?: string;
+    currency?: string;
+    enrollmentCount?: number;
+}
+// API Response Interface
+interface CoursesApiResponse {
+  success: boolean;
+  data: BackendCourse[];
+  pagination?: { /* ... */ };
+}
+// Matches the props expected by your CourseCard.tsx component
+interface CourseCardPropsCourse {
+  id: string;
+  title: string;
+  description: string;
+  instructor: {
+    name: string;
+    avatar?: string;
+  };
+  thumbnail: string;
+  price: number;
+  originalPrice?: number;
+  duration: string;
+  studentsCount: number;
+  rating: number;
+  reviewsCount: number;
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  category: string;
+  tags: string[];
+  isFeatured?: boolean;
+  isNew?: boolean;
+  currency?: string;
+}
+// --- End Interface Definitions ---
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Mock courses data
-  const courses = [
-    {
-      id: '1',
-      title: 'Full-Stack Web Development with React & Node.js',
-      description: 'Master modern web development with React, Node.js, MongoDB, and deploy scalable applications.',
-      instructor: { name: 'Sarah Johnson', avatar: '' },
-      thumbnail: 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg',
-      price: 89000,
-      originalPrice: 120000,
-      duration: '12 weeks',
-      studentsCount: 2340,
-      rating: 4.9,
-      reviewsCount: 1205,
-      level: 'Beginner' as const,
-      category: 'Web Development',
-      tags: ['React', 'Node.js', 'JavaScript', 'MongoDB'],
-      isFeatured: true,
-      isNew: false,
-    },
-    {
-      id: '2',
-      title: 'Digital Marketing Mastery for African Businesses',
-      description: 'Learn digital marketing strategies tailored for the African market and grow your business online.',
-      instructor: { name: 'Michael Okafor', avatar: '' },
-      thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg',
-      price: 65000,
-      duration: '8 weeks',
-      studentsCount: 1890,
-      rating: 4.8,
-      reviewsCount: 945,
-      level: 'Beginner' as const,
-      category: 'Marketing',
-      tags: ['SEO', 'Social Media', 'Google Ads', 'Analytics'],
-      isFeatured: false,
-      isNew: true,
-    },
-    {
-      id: '3',
-      title: 'Data Science & Machine Learning with Python',
-      description: 'Dive deep into data science, learn Python, pandas, sklearn, and build ML models for real-world problems.',
-      instructor: { name: 'Dr. Amina Hassan', avatar: '' },
-      thumbnail: 'https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg',
-      price: 95000,
-      originalPrice: 130000,
-      duration: '16 weeks',
-      studentsCount: 1567,
-      rating: 4.9,
-      reviewsCount: 823,
-      level: 'Advanced' as const,
-      category: 'Data Science',
-      tags: ['Python', 'Machine Learning', 'Pandas', 'TensorFlow'],
-      isFeatured: true,
-      isNew: false,
-    },
-    {
-      id: '4',
-      title: 'Mobile App Development with Flutter',
-      description: 'Build cross-platform mobile applications for iOS and Android using Google\'s Flutter framework.',
-      instructor: { name: 'James Okoye', avatar: '' },
-      thumbnail: 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg',
-      price: 78000,
-      duration: '10 weeks',
-      studentsCount: 1234,
-      rating: 4.7,
-      reviewsCount: 567,
-      level: 'Intermediate' as const,
-      category: 'Mobile Development',
-      tags: ['Flutter', 'Dart', 'iOS', 'Android'],
-      isFeatured: false,
-      isNew: true,
-    },
-  ];
+  // --- State for Fetched Data ---
+  const [courses, setCourses] = useState<BackendCourse[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const API_BASE_URL = 'http://localhost:5000/api';
+  // ------------------------------
 
-  const handleCourseClick = (course: any) => {
-    navigate(`/course/${course.id}`);
+  // --- Fetch Featured Courses on Mount ---
+  useEffect(() => {
+    const fetchFeaturedCourses = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch published, featured courses, limit to 4
+        const response = await axios.get<CoursesApiResponse>(`${API_BASE_URL}/courses`, {
+          params: {
+            status: 'published',
+            featured: true,
+            limit: 4,
+            sort: 'popular' // Or 'rating', 'newest'
+          }
+        });
+
+        if (response.data.success) {
+          setCourses(response.data.data);
+        } else {
+          setError('Failed to fetch featured courses.');
+        }
+      } catch (err) {
+        console.error("Error fetching featured courses:", err);
+        if (axios.isAxiosError(err)) {
+          setError(`Network Error: ${err.message}.`);
+        } else {
+          setError('An unexpected error occurred.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeaturedCourses();
+  }, []); // Run once
+  // -------------------------------------
+
+  // Handlers now use the BackendCourse type and its '_id'
+  const handleCourseClick = (course: BackendCourse) => {
+    navigate(`/course/${course._id}`);
   };
 
-  const handleEnrollClick = (course: any) => {
-    navigate(`/course/${course.id}?enroll=true`);
+  const handleEnrollClick = (course: BackendCourse) => {
+    navigate(`/course/${course._id}?enroll=true`);
   };
+
+  // --- Helper Functions (copied from CoursesPage) ---
+  const getThumbnailUrl = (course: BackendCourse): string => {
+     return course.thumbnail?.url || `https://placehold.co/600x400/006747/FFF?text=${encodeURIComponent(course.title)}`;
+  };
+  const getAvatarUrl = (instructor: BackendInstructor): string | undefined => {
+     if (typeof instructor.avatar === 'string' && instructor.avatar && instructor.avatar !== 'no-photo.jpg') return instructor.avatar;
+     if (typeof instructor.avatar === 'object' && instructor.avatar?.url && instructor.avatar.url !== 'no-photo.jpg') return instructor.avatar.url;
+     return `https://placehold.co/40x40/0A66EA/FFF?text=${instructor.name.charAt(0).toUpperCase()}`;
+  };
+  // ------------------------------------------------
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
     }).format(price);
+  };
+
+  // --- Helper to render course list ---
+  const renderFeaturedCourses = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center col-span-full">
+           <p className="text-gray-600 font-body">Loading featured courses...</p>
+           {/* Optional: Add skeleton loaders */}
+        </div>
+      );
+    }
+    if (error) {
+       return (
+         <div className="text-center col-span-full bg-red-100 text-red-700 p-4 rounded-lg">
+           <p className="font-body font-semibold">Error loading courses:</p>
+           <p className="text-sm">{error}</p>
+         </div>
+       );
+    }
+     if (courses.length === 0) {
+       return (
+         <div className="text-center col-span-full">
+           <p className="text-gray-600 font-body">No featured courses are available at this time.</p>
+         </div>
+       );
+    }
+    
+    // Map over fetched courses and adapt data for CourseCard
+    return courses.map((course) => {
+       const cardProps: CourseCardPropsCourse = {
+           id: course._id, // Map _id to id
+           title: course.title,
+           description: course.description,
+           instructor: {
+               name: course.instructor.name,
+               avatar: getAvatarUrl(course.instructor),
+           },
+           thumbnail: getThumbnailUrl(course),
+           price: course.price,
+           originalPrice: course.originalPrice,
+           duration: course.duration || 'N/A',
+           studentsCount: course.enrollmentCount || course.studentsCount || 0,
+           rating: course.rating?.average || 0,
+           reviewsCount: course.rating?.count || course.reviewsCount || 0,
+           level: ['Beginner', 'Intermediate', 'Advanced'].includes(course.level) ? course.level as 'Beginner' | 'Intermediate' | 'Advanced' : 'Beginner',
+           category: course.category,
+           tags: course.tags || [],
+           isFeatured: course.isFeatured,
+           isNew: course.isNew,
+           currency: course.currency,
+       };
+       return (
+          <CourseCard 
+            key={course._id} 
+            course={cardProps} 
+            layout="grid" 
+            onCourseClick={() => handleCourseClick(course)}
+            onEnrollClick={() => handleEnrollClick(course)}
+          />
+       );
+    });
   };
 
   return (
@@ -112,17 +216,11 @@ const HomePage: React.FC = () => {
             </p>
           </div>
 
+          {/* --- Updated Grid to handle loading/error/content --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-            {courses.slice(0, 4).map((course) => (
-              <CourseCard 
-                key={course.id} 
-                course={course} 
-                layout="grid" 
-                onCourseClick={handleCourseClick}
-                onEnrollClick={handleEnrollClick}
-              />
-            ))}
+            {renderFeaturedCourses()}
           </div>
+          {/* -------------------------------------------------- */}
 
           <div className="text-center">
             <button 
@@ -135,7 +233,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section (Kept as mock data per plan) */}
       <section className="py-20 bg-primary-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">

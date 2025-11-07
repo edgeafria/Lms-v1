@@ -24,7 +24,7 @@ const DashboardPage: React.FC = () => {
     case 'instructor':
       return <InstructorDashboard />;
     case 'student':
-    default:
+      default:
       return <StudentDashboard />;
   }
 };
