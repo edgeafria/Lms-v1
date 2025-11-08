@@ -60,14 +60,14 @@ const limiter = rateLimit({
   max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for dev
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use('/api/', limiter);
+app.use('/v1/', limiter);
 
 // Special raw body parser for Stripe webhook *before* express.json()
-app.use('/api/payments/webhook/stripe', express.raw({ type: 'application/json' }));
+app.use('/v1/payments/webhook/stripe', express.raw({ type: 'application/json' }));
 
 // --- NEW: Special raw body parser for Paystack webhook ---
 // This MUST come BEFORE app.use(express.json())
-app.use('/api/payments/webhook/paystack', express.raw({ type: 'application/json' }));
+app.use('/v1/payments/webhook/paystack', express.raw({ type: 'application/json' }));
 // --------------------------------------------------------
 
 // Body parsing middleware
@@ -83,25 +83,25 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/courses', courseRoutes);
-app.use('/api/lessons', lessonRoutes);
-app.use('/api/quizzes', quizRoutes);
-app.use('/api/enrollments', enrollmentRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/certificates', certificateRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/achievements', achievementRoutes);
-app.use('/api/utils', utilsRoutes);
-app.use('/api/assets', assetsRoutes);
-app.use('/api/submissions', submissionRoutes); // <--- ADD THIS LINE
+app.use('/v1/auth', authRoutes);
+app.use('/v1/users', userRoutes);
+app.use('/v1/courses', courseRoutes);
+app.use('/v1/lessons', lessonRoutes);
+app.use('/v1/quizzes', quizRoutes);
+app.use('/v1/enrollments', enrollmentRoutes);
+app.use('/v1/payments', paymentRoutes);
+app.use('/v1/certificates', certificateRoutes);
+app.use('/v1/reviews', reviewRoutes);
+app.use('/v1/analytics', analyticsRoutes);
+app.use('/v1/upload', uploadRoutes);
+app.use('/v1/activities', activityRoutes);
+app.use('/v1/achievements', achievementRoutes);
+app.use('/v1/utils', utilsRoutes);
+app.use('/v1/assets', assetsRoutes);
+app.use('/v1/submissions', submissionRoutes); // <--- ADD THIS LINE
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/v1/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Edges Africa LMS API is running',
