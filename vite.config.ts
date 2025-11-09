@@ -12,7 +12,9 @@ export default defineConfig({
     port: 3000,
     allowedHosts: [
       "dashboard.edgesafrica.org",
-      "www.dashboard.edgesafrica.org"
+      "www.dashboard.edgesafrica.org",
+      "api.edgesafrica.org",
+      "www.api.edgesafrica.org  "
     ]
   }
 });
