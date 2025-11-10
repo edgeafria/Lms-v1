@@ -13,8 +13,6 @@ export default defineConfig({
     allowedHosts: [
       "dashboard.edgesafrica.org",
       "www.dashboard.edgesafrica.org",
-      "api.edgesafrica.org",
-      "www.api.edgesafrica.org  "
     ]
   }
 });
