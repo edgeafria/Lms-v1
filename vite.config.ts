@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env variables from .env files
+  // Load env variables
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
@@ -12,27 +12,40 @@ export default defineConfig(({ mode }) => {
       exclude: ['lucide-react'],
     },
     
-    // The 'server' object contains all server-related config
+    // Server configuration
     server: {
+      // Your new settings:
       host: "0.0.0.0",
       port: 3000,
       allowedHosts: [
-      "dashboard.edgesafrica.org",
-      "www.dashboard.edgesafrica.org",
+        "dashboard.edgesafrica.org",
+        "www.dashboard.edgesafrica.org",
       ],
-      // The 'proxy' object MUST be inside 'server'
+      
+      // Proxy configuration
       proxy: {
         '/v1': {
           target: env.VITE_API_BASE_URL || 'http://localhost:5000',
-          changeOrigin: true, // Needed for virtual hosted sites
-          secure: false,      // Set to true if your backend is HTTPS
+          changeOrigin: true,
+          secure: false,
+          
+          // --- THIS IS THE FIX FOR THE 'split' ERROR ---
+          /**
+           * Intercepts the proxy request to fix null cookie headers.
+           * This prevents the 'Cannot read properties of null (reading 'split')'
+           * error in the vite/http-proxy.
+           */
+          onProxyReq(proxyReq, req, res) {
+            const cookie = proxyReq.getHeader('cookie');
+            if (cookie === null) {
+              // If the cookie header is null, set it to an empty string
+              // to prevent the proxy from crashing.
+              proxyReq.setHeader('cookie', '');
+            }
+          },
+          // ----------------------------------------------
+          
         },
-        
-        // You can add other proxy rules here if needed
-        // '/api': { 
-        //   target: 'http://another-api.com',
-        //   changeOrigin: true,
-        // }
       },
     },
   };
