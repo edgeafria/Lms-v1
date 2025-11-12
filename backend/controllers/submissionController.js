@@ -1,14 +1,18 @@
 // In: backend/controllers/submissionController.js
 const AssignmentSubmission = require('../models/AssignmentSubmission');
-const Course = require('../models/Course'); // <-- Make sure this is imported
-const Enrollment = require('../models/Enrollment'); // <-- Make sure this is imported
-const Lesson = require('../models/Lesson'); // <-- Make sure this is imported
+const Course = require('../models/Course'); 
+const Enrollment = require('../models/Enrollment'); 
+const Lesson = require('../models/Lesson'); 
+const User = require('../models/User'); // <-- 1. IMPORT USER
+const Activity = require('../models/Activity'); // <-- 2. IMPORT ACTIVITY
+const achievementService = require('../services/achievementService'); // <-- 3. IMPORT SERVICE
 const mongoose = require('mongoose');
 
 // @desc    Get a student's submission for a specific lesson
 // @route   GET /api/submissions?lessonId=...
 // @access  Private (Student)
 exports.getSubmission = async (req, res, next) => {
+  // (This function is unchanged)
   try {
     const { lessonId } = req.query;
     const studentId = req.user.userId;
@@ -22,7 +26,6 @@ exports.getSubmission = async (req, res, next) => {
       student: studentId
     });
 
-    // It's not an error if it's not found, it just means they haven't submitted
     if (!submission) {
       return res.status(200).json({ success: true, data: null });
     }
@@ -47,24 +50,60 @@ exports.submitAssignment = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Use findOneAndUpdate with 'upsert' to create a new submission
-    // or update an existing one.
+    // --- 🐞 4. FETCH USER ---
+    const user = await User.findById(studentId).select('earnedAchievements');
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    // --- END FIX ---
+
+    // Use findOneAndUpdate with 'upsert'
     const submission = await AssignmentSubmission.findOneAndUpdate(
       { lesson: lessonId, student: studentId }, // Find by this
       {
         $set: {
           course: courseId,
           content: content,
-          status: 'submitted', // Set/reset status to 'submitted'
+          status: 'submitted', 
           submittedAt: Date.now()
         }
       },
       {
-        new: true, // Return the updated or new document
-        upsert: true, // Create it if it doesn't exist
+        new: true, 
+        upsert: true, 
         runValidators: true
       }
     );
+
+    // --- 🐞 5. CHECK ACHIEVEMENTS (in memory) ---
+    const newAchievements = await achievementService.checkAssignmentAchievements(user);
+    
+    // --- 🐞 6. SAVE USER (if changed) ---
+    if (newAchievements.length > 0) {
+        await user.save();
+    }
+    // --- END FIX ---
+
+    // --- 🐞 7. LOG ACTIVITY (fire and forget) ---
+    // Log the assignment submission
+    Activity.create({
+        user: studentId,
+        type: 'QUIZ_ATTEMPT', // You might want to create an 'ASSIGNMENT_SUBMITTED' type
+        message: `You submitted an assignment for lesson: ${submission.lesson?.title || 'Lesson'}`,
+        course: courseId,
+        lesson: lessonId
+    }).catch(err => console.error("Failed to log assignment activity:", err));
+
+    // Log any new achievements
+    newAchievements.forEach(ach => {
+        Activity.create({
+          user: user._id,
+          type: 'CERTIFICATE_EARNED', 
+          message: `You earned an achievement: ${ach.title}!`,
+          course: courseId
+        }).catch(err => console.error("Failed to log achievement activity:", err));
+    });
+    // --- END FIX ---
 
     res.status(201).json({ success: true, data: submission });
 
@@ -76,7 +115,7 @@ exports.submitAssignment = async (req, res, next) => {
 
 
 // ===============================================
-// --- NEW INSTRUCTOR FUNCTIONS (Add these) ---
+// --- INSTRUCTOR FUNCTIONS (Unchanged) ---
 // ===============================================
 
 /**
@@ -195,11 +234,14 @@ exports.getSubmissionById = async (req, res, next) => {
 exports.gradeSubmission = async (req, res, next) => {
   try {
     const { submissionId } = req.params;
-    const { passed, feedback } = req.body; // passed will be true or false
+    
+    // --- FIX 1: Expect 'grade' (number) to match frontend ---
+    const { grade, feedback } = req.body; 
 
-    if (passed === undefined) {
-      return res.status(400).json({ success: false, message: 'Pass/Fail status (passed: true/false) is required' });
+    if (grade === undefined) {
+      return res.status(400).json({ success: false, message: 'Grade (0 or 1) is required' });
     }
+    // ----------------------------------------------------
 
     const submission = await AssignmentSubmission.findById(submissionId)
       .populate('course', 'instructor');
@@ -215,37 +257,12 @@ exports.gradeSubmission = async (req, res, next) => {
     }
 
     // 2. Update the submission
-    submission.grade = passed ? 1 : 0; // 1 = Pass, 0 = Fail
+    submission.grade = grade; // --- FIX 1: Use 'grade' directly ---
     submission.feedback = feedback || '';
     submission.status = 'graded';
     submission.gradedAt = Date.now();
 
     await submission.save();
-
-    // 3. If passed, mark the lesson as complete for the student
-    if (passed) {
-      const enrollment = await Enrollment.findOneAndUpdate(
-        { student: submission.student, course: submission.course },
-        { 
-          // $addToSet prevents duplicates if the lesson was already completed
-          $addToSet: { 
-            'progress.completedLessons': { lesson: submission.lesson } 
-          } 
-        },
-        { new: true } // Return the updated enrollment
-      );
-
-      // Recalculate progress percentage
-      if (enrollment) {
-          const lessonCount = await Lesson.countDocuments({ course: submission.course });
-          if (lessonCount > 0) {
-              enrollment.progress.percentageComplete = (enrollment.progress.completedLessons.length / lessonCount) * 100;
-          } else {
-              enrollment.progress.percentageComplete = 0;
-          }
-          await enrollment.save();
-      }
-    }
     
     res.status(200).json({ success: true, data: submission });
 

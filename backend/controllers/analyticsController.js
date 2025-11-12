@@ -38,33 +38,41 @@ exports.getDashboardAnalytics = async (req, res, next) => {
         let paymentFilter = { status: 'successful', createdAt: { $gte: start, $lte: end } };
         let courseRatingFilter = { status: 'published', 'rating.count': { $gt: 0 } };
         let allTimeEnrollmentFilter = {};
+        
+        let instructorCountPromise = Promise.resolve(0); 
+        if (req.user.role === 'admin') {
+            instructorCountPromise = User.countDocuments({ role: 'instructor' });
+        }
 
 
         if (req.user.role === 'instructor') {
             const instructorCourses = await Course.find({ instructor: req.user.userId }).select('_id');
             const courseIds = instructorCourses.map(c => c._id);
             
-            courseFilter.instructor = req.user.userId; // For totalCourses
-            enrollmentFilter.course = { $in: courseIds }; // For newEnrollments
-            allTimeEnrollmentFilter.course = { $in: courseIds }; // For totalStudents & Engagement
-            paymentFilter.course = { $in: courseIds }; // For totalRevenue
-            courseRatingFilter.instructor = req.user.userId; // For avgRating
+            courseFilter.instructor = req.user.userId; 
+            enrollmentFilter.course = { $in: courseIds }; 
+            allTimeEnrollmentFilter.course = { $in: courseIds }; 
+            paymentFilter.course = { $in: courseIds }; 
+            courseRatingFilter.instructor = req.user.userId; 
         }
 
         // --- Run all data queries in parallel ---
         const [
             totalCourses,
-            newEnrollments,
+            newEnrollmentsCount, // <-- Renamed this
             revenueData,
             totalStudentsData,
             coursesForRating,
-            engagementData,
-            quizData // <-- NEW QUERY
+            engagementData, 
+            quizData,
+            totalInstructors,
+            recentEnrollments, // <-- 🐞 1. ADDED THIS QUERY
+            topCourses         // <-- 🐞 2. ADDED THIS QUERY
         ] = await Promise.all([
             // 1. Total Courses
             Course.countDocuments(courseFilter),
             // 2. New Enrollments (in period)
-            Enrollment.countDocuments(enrollmentFilter),
+            Enrollment.countDocuments(enrollmentFilter), // <-- Keep this for the stat
             // 3. Total Revenue (in period)
             Payment.aggregate([
                 { $match: paymentFilter },
@@ -73,34 +81,50 @@ exports.getDashboardAnalytics = async (req, res, next) => {
             // 4. Total Students (all-time, unique)
             req.user.role === 'admin'
                 ? User.countDocuments({ role: 'student' })
-                : Enrollment.distinct('student', allTimeEnrollmentFilter),
+                : Enrollment.distinct('student', allTimeEnrollmentFilter), 
             // 5. Average Rating
             Course.find(courseRatingFilter).select('rating.average'),
-            // 6. Engagement Data (Completion/Time)
+            // 6. Engagement Data
             Enrollment.aggregate([
                 { $match: allTimeEnrollmentFilter },
                 {
                     $group: {
                         _id: null,
                         avgCompletion: { $avg: "$progress.percentageComplete" },
-                        avgTimeSpent: { $avg: "$progress.totalTimeSpent" }
+                        totalTimeSpent: { $sum: "$progress.totalTimeSpent" } 
                     }
                 }
             ]),
-            // 7. --- NEW: Quiz Pass Rate ---
+            // 7. Quiz Pass Rate
             Enrollment.aggregate([
-                { $match: allTimeEnrollmentFilter }, // Filter for instructor's enrollments
-                { $unwind: "$quizAttempts" }, // Deconstruct the quizAttempts array
-                { $unwind: "$quizAttempts.attempts" }, // Deconstruct the attempts array
+                { $match: allTimeEnrollmentFilter }, 
+                { $unwind: "$quizAttempts" }, 
+                { $unwind: "$quizAttempts.attempts" }, 
                 { $group: {
                     _id: null,
                     totalAttempts: { $sum: 1 },
                     passedAttempts: {
-                        $sum: { $cond: [ "$quizAttempts.attempts.passed", 1, 0 ] } // Sum 1 if passed: true
+                        $sum: { $cond: [ "$quizAttempts.attempts.passed", 1, 0 ] } 
                     }
                 }}
-            ])
-            // -----------------------------
+            ]),
+            // 8. Total Instructors
+            instructorCountPromise,
+            
+            // --- 🐞 9. GET 4 RECENT ENROLLMENTS ---
+            Enrollment.find(enrollmentFilter) // Use same period filter
+                .sort({ createdAt: -1 })
+                .limit(4)
+                // --- 🐞 THIS IS THE ONLY LINE I CHANGED ---
+                .populate('student', 'name avatar') // <-- Now requests 'avatar' object
+                // ----------------------------------------
+                .populate('course', 'title'),
+                
+            // --- 🐞 10. GET 4 TOP COURSES ---
+            Course.find({ ...courseFilter, status: 'published' })
+                .sort({ enrollmentCount: -1 })
+                .limit(4)
+                .select('title enrollmentCount rating.average')
         ]);
 
         // --- Process Results ---
@@ -109,16 +133,15 @@ exports.getDashboardAnalytics = async (req, res, next) => {
         
         const totalStudents = req.user.role === 'admin'
             ? totalStudentsData
-            : totalStudentsData.length;
+            : totalStudentsData.length; 
             
         const avgRating = coursesForRating.length > 0
             ? coursesForRating.reduce((sum, c) => sum + (c.rating.average || 0), 0) / coursesForRating.length
             : 0;
 
         const avgCompletionRate = engagementData.length > 0 ? (engagementData[0].avgCompletion || 0) : 0;
-        const avgStudyTime = engagementData.length > 0 ? (engagementData[0].avgTimeSpent || 0) : 0;
+        const totalStudyTime = engagementData.length > 0 ? (engagementData[0].totalTimeSpent || 0) : 0; 
 
-        // Process new quiz data
         let avgQuizPassRate = 0;
         if (quizData.length > 0 && quizData[0].totalAttempts > 0) {
             avgQuizPassRate = (quizData[0].passedAttempts / quizData[0].totalAttempts) * 100;
@@ -130,12 +153,15 @@ exports.getDashboardAnalytics = async (req, res, next) => {
                 period,
                 totalStudents,
                 totalCourses,
-                newEnrollments,
+                newEnrollments: newEnrollmentsCount, // <-- Use the count here
                 totalRevenue,
                 avgRating: parseFloat(avgRating.toFixed(1)),
                 avgCompletionRate: parseFloat(avgCompletionRate.toFixed(1)),
-                avgStudyTime: Math.round(avgStudyTime),
-                avgQuizPassRate: parseFloat(avgQuizPassRate.toFixed(1)) // <-- ADDED
+                totalStudyTime: Math.round(totalStudyTime), 
+                avgQuizPassRate: parseFloat(avgQuizPassRate.toFixed(1)),
+                totalInstructors: totalInstructors,
+                recentEnrollments: recentEnrollments, // <-- 🐞 3. SEND NEW DATA
+                topCourses: topCourses             // <-- 🐞 4. SEND NEW DATA
             }
         });
 
@@ -146,7 +172,8 @@ exports.getDashboardAnalytics = async (req, res, next) => {
     }
 };
 
-// ... (rest of the file: getCourseStats, getRevenueAnalytics, getStudentAnalytics, getAll, etc.) ...
+// ... (rest of your file: getCourseStats, getRevenueAnalytics, etc. are unchanged) ...
+
 // @desc    Get stats for a specific course
 // @route   GET /api/analytics/:id (mapped from getOne)
 // @access  Private (Owner/Admin)
@@ -198,23 +225,22 @@ exports.getRevenueAnalytics = async (req, res, next) => {
         const { period = '30d', courseId } = req.query;
         const { start, end } = getDateRange(period);
         let paymentFilter = { status: 'successful', createdAt: { $gte: start, $lte: end } };
-        let instructorCourseIds = []; // To store instructor's course IDs
+        let instructorCourseIds = []; 
 
         if (req.user.role === 'instructor') {
             const instructorCourses = await Course.find({ instructor: req.user.userId }).select('_id');
-            instructorCourseIds = instructorCourses.map(c => c._id); // Store IDs
+            instructorCourseIds = instructorCourses.map(c => c._id); 
             paymentFilter.course = { $in: instructorCourseIds };
         }
         
         if (courseId) {
-             if(req.user.role === 'instructor' && !instructorCourseIds.some(id => id.equals(courseId))) { // Check if ID is in the instructor's list
+             if(req.user.role === 'instructor' && !instructorCourseIds.some(id => id.equals(courseId))) { 
                   return res.status(403).json({ success: false, message: 'Not authorized for this course revenue'});
              }
-             // Ensure courseId is a valid ObjectId before using in filter
              if (!mongoose.Types.ObjectId.isValid(courseId)) {
                   return res.status(400).json({ success: false, message: 'Invalid Course ID' });
              }
-             paymentFilter.course = new mongoose.Types.ObjectId(courseId); // Filter for a single course
+             paymentFilter.course = new mongoose.Types.ObjectId(courseId); 
         }
         
         const revenueByCourse = await Payment.aggregate([ { $match: paymentFilter }, { $group: { _id: '$course', totalRevenue: { $sum: '$amount' }, count: { $sum: 1 } } }, { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseDetails' } }, { $unwind: '$courseDetails' }, { $project: { _id: 0, courseId: '$_id', courseTitle: '$courseDetails.title', totalRevenue: 1, numberOfSales: '$count' } }, { $sort: { totalRevenue: -1 } } ]);

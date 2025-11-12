@@ -20,6 +20,17 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+// --- 🐞 NEW PUBLIC ROUTE ---
+// @route   GET /api/users/instructors
+// @desc    Get all active instructors (Public)
+// @access  Public
+router.get(
+  '/instructors',
+  userController.getInstructors
+);
+// -----------------------------
+
+
 // --- Profile Routes (for the logged-in user) ---
 
 router.get(
@@ -51,17 +62,17 @@ router.put(
 
     body('socialLinks.twitter')
       .if(body('socialLinks.twitter').notEmpty())
-      .isURL({ protocols: ['http', 'https'], require_protocol: true })
+      .isURL({ protocols: ['http', 'https...'], require_protocol: true })
       .withMessage('Twitter URL must be a valid URL (e.g., https://...)'),
 
     body('socialLinks.linkedin')
       .if(body('socialLinks.linkedin').notEmpty())
-      .isURL({ protocols: ['http', 'https'], require_protocol: true })
+      .isURL({ protocols: ['http', 'https...'], require_protocol: true })
       .withMessage('LinkedIn URL must be a valid URL (e.g., https://...)'),
 
     body('socialLinks.instagram')
       .if(body('socialLinks.instagram').notEmpty())
-      .isURL({ protocols: ['http', 'https'], require_protocol: true })
+      .isURL({ protocols: ['http', 'https...'], require_protocol: true })
       .withMessage('Instagram URL must be a valid URL (e.g., https://...)'),
     // -----------------------------
   ],
@@ -94,11 +105,40 @@ router.post(
 
 // --- Admin Routes (for managing all users) ---
 
+// 🐞 --- NEW ROUTE FOR STATS --- 🐞
+// @route   GET /api/users/stats
+// @desc    Get user stats (Admin)
+// @access  Private/Admin
+router.get(
+  '/stats',
+  auth,
+  authorize(['admin']),
+  userController.getUserStats
+);
+
 router.get(
   '/',
   auth,
   authorize(['admin']), // Protects route for admins only
   userController.getAll
+);
+
+// 🐞 --- NEW ROUTE FOR CREATING USERS --- 🐞
+// @route   POST /api/users
+// @desc    Create a new user (Admin)
+// @access  Private/Admin
+router.post(
+  '/',
+  auth,
+  authorize(['admin']),
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').isEmail().normalizeEmail().withMessage('A valid email is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['student', 'instructor', 'admin']).withMessage('Invalid role')
+  ],
+  handleValidationErrors,
+  userController.create
 );
 
 router.get(

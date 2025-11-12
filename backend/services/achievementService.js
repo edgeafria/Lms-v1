@@ -5,156 +5,310 @@ const Activity = require('../models/Activity');
 const Enrollment = require('../models/Enrollment');
 const Review = require('../models/Review');
 const Certificate = require('../models/Certificate');
+const Course = require('../models/Course'); // <-- We need this for category checks
 
 /**
  * A helper function to grant an achievement.
- * It checks if the user already has it, finds the achievement,
- * adds it to the user, and creates an activity log.
- * This is designed to be "fire and forget" - it runs in the background
- * and will not block the main request (e.g., login, lesson completion).
- *
- * @param {string} userId - The user's ID
- * @param {string} achievementCode - The unique code (e.g., 'FIRST_ENROLLMENT')
+ * IT MODIFIES THE USER OBJECT IN MEMORY AND DOES NOT SAVE.
+ * It returns the achievement object if granted, or null.
  */
-const grantAchievement = async (userId, achievementCode) => {
+const grantAchievement = async (user, achievementCode) => {
   try {
-    // 1. Find the user and the achievement definition simultaneously
-    const [user, achievement] = await Promise.all([
-      User.findById(userId).select('earnedAchievements'),
-      Achievement.findOne({ code: achievementCode })
-    ]);
+    // 1. Find the achievement definition
+    const achievement = await Achievement.findOne({ code: achievementCode });
 
     // 2. Check if user and achievement exist
-    if (!user || !achievement) {
-      if (!user) console.error(`AchievementService: User ${userId} not found.`);
-      if (!achievement) console.error(`AchievementService: Achievement code ${achievementCode} not found in database.`);
-      return;
+    if (!user) {
+        console.error(`AchievementService: User object is null.`);
+        return null;
+    }
+    if (!achievement) {
+      console.error(`AchievementService: Achievement code ${achievementCode} not found in database.`);
+      return null;
     }
 
     // 3. Check if user already has this achievement
     const alreadyEarned = user.earnedAchievements.some(earnedId => earnedId.equals(achievement._id));
     if (alreadyEarned) {
-      // console.log(`AchievementService: User ${userId} already has achievement ${achievementCode}.`);
-      return;
+      // console.log(`AchievementService: User ${user._id} already has achievement ${achievementCode}.`);
+      return null; // Not newly granted
     }
 
-    // 4. Grant the achievement
+    // 4. Grant the achievement (in memory)
     user.earnedAchievements.push(achievement._id);
-    await user.save();
 
-    // 5. Log the achievement as a new activity
-    await Activity.create({
-      user: userId,
-      type: 'CERTIFICATE_EARNED', // Using 'CERTIFICATE_EARNED' as a generic "achievement" type
-      message: `You earned an achievement: ${achievement.title}!`,
-      course: null, // Achievements are not always tied to a course
-    });
-
-    console.log(`Achievement Granted: User ${userId} earned ${achievementCode}`);
+    console.log(`Achievement Granted (in memory): User ${user._id} earned ${achievementCode}`);
+    return achievement; // Return the full achievement object
 
   } catch (error) {
-    // We catch and log the error here so that even if the achievement
-    // logic fails (e.g., a database error), it doesn't crash the
-    // main request (like the login or lesson completion).
-    console.error(`Error in grantAchievement for ${userId} & ${achievementCode}:`, error.message);
+    console.error(`Error in grantAchievement for ${user._id} & ${achievementCode}:`, error.message);
+    return null;
   }
 };
 
 // --- Exportable Check Functions ---
 
 /**
- * Checks for login-related achievements (e.g., streaks).
- * Called *after* user.loginStreak and user.lastLogin have been updated and saved.
- * @param {object} user - The full user object after streak logic.
+ * Checks for login-related achievements.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkLoginStreakAchievements = (user) => {
-    if (user.loginStreak === 3) {
-        grantAchievement(user._id, 'LOGIN_STREAK_3');
+exports.checkLoginStreakAchievements = async (user) => {
+    const newAchievements = [];
+    
+    // Check for each streak achievement. grantAchievement prevents duplicates.
+    if (user.loginStreak >= 3) {
+        const ach = await grantAchievement(user, 'LOGIN_STREAK_3');
+        if (ach) newAchievements.push(ach);
     }
-    if (user.loginStreak === 7) {
-        grantAchievement(user._id, 'LOGIN_STREAK_7');
+    if (user.loginStreak >= 7) {
+        const ach = await grantAchievement(user, 'LOGIN_STREAK_7');
+        if (ach) newAchievements.push(ach);
     }
-    // Add more streak checks (e.g., 30 days) here
+    // --- 🐞 ADDED NEW CHECKS ---
+    if (user.loginStreak >= 14) {
+        const ach = await grantAchievement(user, 'LOGIN_STREAK_14');
+        if (ach) newAchievements.push(ach);
+    }
+    if (user.loginStreak >= 30) {
+        const ach = await grantAchievement(user, 'LOGIN_STREAK_30');
+        if (ach) newAchievements.push(ach);
+    }
+    // --- END NEW CHECKS ---
+
+    return newAchievements; // Return the list of new achievements
 };
 
 /**
  * Checks for enrollment-related achievements.
- * Called *after* a new enrollment is successfully created.
- * @param {string} userId - The user's ID.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkEnrollmentAchievements = async (userId) => {
+exports.checkEnrollmentAchievements = async (user) => {
     try {
-        const enrollmentCount = await Enrollment.countDocuments({ student: userId });
+        const newAchievements = [];
+        
+        // Find all enrollments and populate the course category
+        const allEnrollments = await Enrollment.find({ student: user._id }).select('course').populate('course', 'category');
+        const enrollmentCount = allEnrollments.length;
+
+        // --- 🐞 ADDED COUNT CHECKS ---
         if (enrollmentCount === 1) {
-            grantAchievement(userId, 'FIRST_ENROLLMENT');
+            const ach = await grantAchievement(user, 'FIRST_ENROLLMENT');
+            if (ach) newAchievements.push(ach);
         }
-    } catch (error) { console.error("Error in checkEnrollmentAchievements:", error.message); }
+        if (enrollmentCount === 5) {
+            const ach = await grantAchievement(user, 'ENROLLMENT_5');
+            if (ach) newAchievements.push(ach);
+        }
+        if (enrollmentCount === 10) {
+            const ach = await grantAchievement(user, 'ENROLLMENT_10');
+            if (ach) newAchievements.push(ach);
+        }
+        // --- END COUNT CHECKS ---
+
+        // --- 🐞 ADDED CATEGORY CHECKS ---
+        const categories = allEnrollments.map(enr => enr.course.category).filter(Boolean); // Get all categories
+        
+        // Check for "Explorer" (3+ different categories)
+        const uniqueCategories = new Set(categories);
+        if (uniqueCategories.size >= 3) {
+            const ach = await grantAchievement(user, 'EXPLORER_3');
+            if (ach) newAchievements.push(ach);
+        }
+
+        // Check for "Specialist" (3+ courses in the *same* category)
+        const categoryCounts = categories.reduce((acc, cat) => {
+            acc[cat] = (acc[cat] || 0) + 1;
+            return acc;
+        }, {});
+        
+        if (Object.values(categoryCounts).some(count => count >= 3)) {
+             const ach = await grantAchievement(user, 'SPECIALIST_3');
+             if (ach) newAchievements.push(ach);
+        }
+        // --- END CATEGORY CHECKS ---
+
+        return newAchievements;
+    } catch (error) { 
+        console.error("Error in checkEnrollmentAchievements:", error.message); 
+        return [];
+    }
 };
 
 /**
  * Checks for lesson-related achievements.
- * Called *after* a lesson is marked complete.
- * @param {string} userId - The user's ID.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkLessonAchievements = async (userId) => {
+exports.checkLessonAchievements = async (user) => {
      try {
-        // Find how many unique lessons this user has completed
-        const enrollment = await Enrollment.findOne({ student: userId }); // Find any enrollment
-        const completedCount = enrollment?.progress?.completedLessons?.length || 0; // Get count from first enrollment found?
-        // This logic is simple and just checks the first lesson.
-        // A more robust check would aggregate *all* completed lessons across *all* enrollments.
-        
-        // For simplicity: check if this is the user's first *ever* completed lesson
-        // Find *all* enrollments for the user
-        const allEnrollments = await Enrollment.find({ student: userId }).select('progress.completedLessons');
+        const allEnrollments = await Enrollment.find({ student: user._id }).select('progress.completedLessons');
         const totalCompletedLessons = allEnrollments.reduce((sum, enr) => sum + (enr.progress.completedLessons.length || 0), 0);
+        const newAchievements = [];
 
         if (totalCompletedLessons === 1) {
-            grantAchievement(userId, 'FIRST_LESSON_COMPLETE');
+            const ach = await grantAchievement(user, 'FIRST_LESSON_COMPLETE');
+            if (ach) newAchievements.push(ach);
         }
-    } catch (error) { console.error("Error in checkLessonAchievements:", error.message); }
+        // --- 🐞 ADDED COUNT CHECKS ---
+        if (totalCompletedLessons === 10) {
+            const ach = await grantAchievement(user, 'LESSONS_10');
+            if (ach) newAchievements.push(ach);
+        }
+        if (totalCompletedLessons === 50) {
+            const ach = await grantAchievement(user, 'LESSONS_50');
+            if (ach) newAchievements.push(ach);
+        }
+        // --- END COUNT CHECKS ---
+        
+        return newAchievements;
+    } catch (error) { 
+        console.error("Error in checkLessonAchievements:", error.message); 
+        return [];
+    }
 };
 
 /**
- * Checks for quiz-related achievements.
- * Called *after* a quiz attempt is graded.
- * @param {string} userId - The user's ID.
- * @param {string} quizId - The quiz's ID.
- * @param {number} percentage - The score the user got (0-100).
+ * Checks for a single perfect quiz score.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkQuizAchievements = (userId, quizId, percentage) => {
+exports.checkQuizAchievements = async (user, percentage) => {
+    const newAchievements = [];
     if (percentage === 100) {
-        grantAchievement(userId, 'PERFECT_QUIZ');
+        const ach = await grantAchievement(user, 'PERFECT_QUIZ');
+        if (ach) newAchievements.push(ach);
     }
-    // Add more: e.g., "Completed 10 quizzes"
+    return newAchievements;
 };
+
+/**
+ * 🐞 NEW FUNCTION
+ * Checks for quiz pass counts.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
+ */
+exports.checkQuizPassAchievements = async (user) => {
+    try {
+        const newAchievements = [];
+        const allEnrollments = await Enrollment.find({ student: user._id }).select('quizAttempts.quiz quizAttempts.attempts.passed');
+        
+        const passedQuizIds = new Set();
+        allEnrollments.forEach(enr => {
+            if (enr.quizAttempts) {
+                enr.quizAttempts.forEach(quiz => {
+                    // Check if *any* attempt for this quiz was passed
+                    const hasPassed = quiz.attempts.some(att => att.passed === true);
+                    if (hasPassed && quiz.quiz) {
+                        passedQuizIds.add(quiz.quiz.toString());
+                    }
+                });
+            }
+        });
+
+        if (passedQuizIds.size >= 5) {
+            const ach = await grantAchievement(user, 'QUIZ_PASS_5');
+            if (ach) newAchievements.push(ach);
+        }
+        return newAchievements;
+    } catch (error) {
+        console.error("Error in checkQuizPassAchievements:", error.message); 
+        return [];
+    }
+};
+
 
 /**
  * Checks for review-related achievements.
- * Called *after* a review is successfully created.
- * @param {string} userId - The user's ID.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkReviewAchievements = async (userId) => {
+exports.checkReviewAchievements = async (user) => {
      try {
-        const reviewCount = await Review.countDocuments({ student: userId });
+        const reviewCount = await Review.countDocuments({ student: user._id });
+        const newAchievements = [];
         if (reviewCount === 1) {
-            // Grant "First Review" achievement
-            // grantAchievement(userId, 'FIRST_REVIEW'); // Add this code to Achievement model if you want it
+            // --- 🐞 UNCOMMENTED ---
+            const ach = await grantAchievement(user, 'FIRST_REVIEW'); 
+            if (ach) newAchievements.push(ach);
         }
-    } catch (error) { console.error("Error in checkReviewAchievements:", error.message); }
+        return newAchievements;
+    } catch (error) { 
+        console.error("Error in checkReviewAchievements:", error.message); 
+        return [];
+    }
 };
 
 /**
- * Checks for certificate-related achievements.
- * Called *after* a certificate is successfully created.
- * @param {string} userId - The user's ID.
+ * 🐞 NEW FUNCTION
+ * Checks for assignment-related achievements.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
  */
-exports.checkCertificateAchievements = async (userId) => {
-     try {
-        const certificateCount = await Certificate.countDocuments({ student: userId });
-        if (certificateCount === 1) {
-            // Grant "First Certificate" achievement
-            // grantAchievement(userId, 'FIRST_CERTIFICATE'); // Add this code to Achievement model if you want it
+exports.checkAssignmentAchievements = async (user) => {
+    try {
+        const newAchievements = [];
+        const allEnrollments = await Enrollment.find({ student: user._id }).select('assignments.status');
+        
+        let totalSubmitted = 0;
+        allEnrollments.forEach(enr => {
+            if (enr.assignments) {
+                enr.assignments.forEach(assign => {
+                    if (assign.status === 'submitted' || assign.status === 'graded') {
+                        totalSubmitted++;
+                    }
+                });
+            }
+        });
+
+        if (totalSubmitted === 1) {
+            const ach = await grantAchievement(user, 'FIRST_ASSIGNMENT');
+            if (ach) newAchievements.push(ach);
         }
-    } catch (error) { console.error("Error in checkCertificateAchievements:", error.message); }
+        return newAchievements;
+    } catch (error) {
+        console.error("Error in checkAssignmentAchievements:", error.message);
+        return [];
+    }
+};
+
+
+/**
+ * 🐞 NEW FUNCTION (was missing from your file)
+ * Checks for course completion achievements.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
+ */
+exports.checkCourseCompletionAchievements = async (user) => {
+    try {
+        const newAchievements = [];
+        const completedCount = await Enrollment.countDocuments({ student: user._id, status: 'completed' });
+
+        if (completedCount === 1) {
+            const ach = await grantAchievement(user, 'FIRST_COURSE_COMPLETE');
+            if (ach) newAchievements.push(ach);
+        }
+        if (completedCount === 3) {
+            const ach = await grantAchievement(user, 'COMPLETE_3_COURSES');
+            if (ach) newAchievements.push(ach);
+        }
+        return newAchievements;
+    } catch (error) {
+        console.error("Error in checkCourseCompletionAchievements:", error.message);
+        return [];
+    }
+};
+
+
+/**
+ * Checks for certificate-related achievements.
+ * MODIFIES THE USER OBJECT. DOES NOT SAVE.
+ */
+exports.checkCertificateAchievements = async (user) => {
+     try {
+        const certificateCount = await Certificate.countDocuments({ student: user._id });
+        const newAchievements = [];
+        if (certificateCount === 1) {
+            // --- 🐞 UNCOMMENTED ---
+            const ach = await grantAchievement(user, 'FIRST_CERTIFICATE');
+            if (ach) newAchievements.push(ach);
+        }
+        return newAchievements;
+    } catch (error) { 
+        console.error("Error in checkCertificateAchievements:", error.message); 
+        return [];
+    }
 };

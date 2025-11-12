@@ -2,7 +2,7 @@
 const { validationResult } = require('express-validator');
 
 // @desc    Handle generic single file upload
-// @route   POST /api/upload
+// @route   POST /v1/upload
 // @access  Private (Requires authentication)
 exports.create = async (req, res, next) => { // Maps to POST /
     try {
@@ -50,18 +50,18 @@ exports.create = async (req, res, next) => { // Maps to POST /
 // --- Other functions return 'Not Supported' messages ---
 
 exports.getAll = (req, res, next) => {
-    res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot GET /api/upload' });
+    res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot GET /v1/upload' });
 };
 
 exports.getOne = (req, res, next) => {
-     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot GET /api/upload/:id' });
+     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot GET /v1/upload/:id' });
 };
 
 exports.update = (req, res, next) => {
-     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot PUT /api/upload/:id' });
+     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot PUT /v1/upload/:id' });
 };
 
 exports.remove = (req, res, next) => {
      // Optional: Implement logic to delete from Cloudinary using public_id if needed, requires Admin role?
-     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot DELETE /api/upload/:id (Deletion logic not implemented)' });
+     res.status(405).json({ success: false, message: 'Method Not Allowed: Cannot DELETE /v1/upload/:id (Deletion logic not implemented)' });
 };

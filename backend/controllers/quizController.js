@@ -1,12 +1,12 @@
 const Quiz = require('../models/Quiz');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
-const User = require('../models/User');
-const Lesson = require('../models/Lesson'); // Required
-const Activity = require('../models/Activity'); // Required
-const achievementService = require('../services/achievementService'); // Required
+const User = require('../models/User'); // <-- 1. IMPORT USER
+const Lesson = require('../models/Lesson'); 
+const Activity = require('../models/Activity'); 
+const achievementService = require('../services/achievementService'); 
 const { validationResult } = require('express-validator');
-const mongoose = require('mongoose'); // Required
+const mongoose = require('mongoose'); 
 
 // @desc    Get all quizzes (filtered for instructor/admin)
 // @route   GET /api/quizzes
@@ -44,7 +44,6 @@ exports.getOne = async (req, res, next) => {
         if (!quiz) { return res.status(404).json({ success: false, message: 'Quiz not found' }); }
         let canAccess = false;
         if (req.user.role === 'admin') { canAccess = true; }
-        // --- FIX: Check quiz.course.instructor (which is populated) ---
         else if (req.user.role === 'instructor' && quiz.course?.instructor?.toString() === req.user.userId.toString()) { canAccess = true; }
         else if (req.user.role === 'student') {
             const enrollment = await Enrollment.findOne({ student: req.user.userId, course: quiz.course._id, status: 'active' });
@@ -59,8 +58,7 @@ exports.getOne = async (req, res, next) => {
 // @route   POST /api/quizzes
 // @access  Private (Instructor/Admin)
 exports.create = async (req, res, next) => {
-    // This route is used by CourseBuilder (POST /api/quizzes)
-    // It's a create OR update (upsert) logic
+    // (This function is unchanged)
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) { return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() }); }
@@ -74,7 +72,6 @@ exports.create = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Not authorized to create quiz for this course' });
         }
 
-        // Calculate total points
         let totalPoints = 0;
         if (questions && Array.isArray(questions)) {
             for (let i = 0; i < questions.length; i++) { 
@@ -93,30 +90,27 @@ exports.create = async (req, res, next) => {
             settings: settings || {}, 
             instructions, 
             totalPoints,
-            passingScore: settings?.passingScore || 70, // Ensure passingScore is set on Quiz
+            passingScore: settings?.passingScore || 70, 
         };
 
         let quiz;
 
         if (existingQuizId && mongoose.Types.ObjectId.isValid(existingQuizId)) {
-            // Update existing quiz
             quiz = await Quiz.findByIdAndUpdate(existingQuizId, quizData, { new: true, runValidators: true });
             if (!quiz) { throw new Error("Quiz not found for update."); }
             console.log(`Quiz updated: ${quiz._id}`);
         } else {
-            // Create new quiz
             quiz = new Quiz(quizData);
             await quiz.save();
             console.log(`New Quiz created: ${quiz._id}`);
 
-            // Link Quiz to Lesson (Only on CREATE)
             await Lesson.findByIdAndUpdate(lesson, {
                 $set: { 'content.quiz': quiz._id, type: 'quiz' }
             });
             console.log(`Lesson ${lesson} linked to Quiz ${quiz._id}`);
         }
         
-        await quiz.populate('course', 'title instructor'); // Repopulate course
+        await quiz.populate('course', 'title instructor'); 
         res.status(201).json({ success: true, message: 'Quiz saved successfully', data: quiz });
     } catch (error) { 
         console.error('Create/Update quiz error:', error); 
@@ -128,6 +122,7 @@ exports.create = async (req, res, next) => {
 // @route   PUT /api/quizzes/:id
 // @access  Private (Quiz Instructor/Admin)
 exports.update = async (req, res, next) => {
+    // (This function is unchanged)
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) { return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() }); }
@@ -139,7 +134,6 @@ exports.update = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Not authorized to update this quiz' }); 
         }
         
-        // Recalculate total points if questions are being updated
         if (req.body.questions) { 
             req.body.totalPoints = req.body.questions.reduce((sum, q, index) => {
                 q.order = index + 1;
@@ -147,14 +141,13 @@ exports.update = async (req, res, next) => {
             }, 0);
         }
         
-        // Prevent changing core associations
         delete req.body.course; 
         delete req.body.lesson;
         delete req.body.instructor;
 
         const updatedQuiz = await Quiz.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
             .populate('course', 'title instructor')
-            .populate('instructor', 'name'); // Repopulate instructor too
+            .populate('instructor', 'name'); 
             
         res.json({ success: true, message: 'Quiz updated successfully', data: updatedQuiz });
     } catch (error) { console.error('Update quiz error:', error); next(error); }
@@ -164,6 +157,7 @@ exports.update = async (req, res, next) => {
 // @route   DELETE /api/quizzes/:id
 // @access  Private (Quiz Instructor/Admin)
 exports.remove = async (req, res, next) => {
+    // (This function is unchanged)
     try {
         const quiz = await Quiz.findById(req.params.id).populate('course', 'instructor');
         if (!quiz) { return res.status(404).json({ success: false, message: 'Quiz not found' }); }
@@ -177,7 +171,6 @@ exports.remove = async (req, res, next) => {
         
         await Quiz.findByIdAndDelete(req.params.id);
         
-        // Also unlink from lesson
         await Lesson.findOneAndUpdate({ 'content.quiz': req.params.id }, { $set: { 'content.quiz': null } });
         
         res.json({ success: true, message: 'Quiz deleted successfully' });
@@ -193,34 +186,43 @@ exports.submitAttempt = async (req, res, next) => {
         if (!errors.isEmpty()) { return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() }); }
         
         const { answers, timeSpent = 0 } = req.body;
+        const studentId = req.user.userId; // <-- 2. GET STUDENT ID
+
+        // --- 🐞 3. FETCH QUIZ, ENROLLMENT, AND USER ---
         const quiz = await Quiz.findById(req.params.id);
         if (!quiz) { return res.status(404).json({ success: false, message: 'Quiz not found' }); }
 
-        const enrollment = await Enrollment.findOne({ student: req.user.userId, course: quiz.course, status: 'active' });
+        const [enrollment, user] = await Promise.all([
+            Enrollment.findOne({ student: studentId, course: quiz.course, status: 'active' }),
+            User.findById(studentId).select('earnedAchievements') // Get user for achievements
+        ]);
+
         if (!enrollment) { return res.status(403).json({ success: false, message: 'You must be actively enrolled in this course to take the quiz' }); }
+        if (!user) { return res.status(404).json({ success: false, message: 'User not found' }); }
+        // --- END FIX ---
 
         let quizAttemptRecord = enrollment.quizAttempts.find(qa => qa.quiz.equals(quiz._id));
-        const maxAttempts = quiz.settings?.attempts || 1; // Default 1 attempt
+        const maxAttempts = quiz.settings?.attempts || 1; 
         
         if (maxAttempts > 0 && quizAttemptRecord && quizAttemptRecord.attempts.length >= maxAttempts) { 
             return res.status(400).json({ success: false, message: `Maximum attempts (${maxAttempts}) reached for this quiz` }); 
         }
 
-        // --- START GRADING LOGIC ---
+        // --- START GRADING LOGIC (Unchanged) ---
         let totalScore = 0;
-        let totalPoints = 0; // Total *possible* points for auto-graded questions
+        let totalPoints = 0; 
         let hasEssay = false;
         const gradedAnswers = [];
 
         for (const question of quiz.questions) {
             const userAnswerData = answers.find(a => a.questionId === question._id.toString());
-            const userAnswer = userAnswerData ? userAnswerData.answer : null; // This is the option ID or text
+            const userAnswer = userAnswerData ? userAnswerData.answer : null; 
             
             let isCorrect = false;
             let points = 0;
             
             if (question.type === 'multiple-choice' || question.type === 'true-false') {
-                totalPoints += question.points || 1; // This question is auto-gradable
+                totalPoints += question.points || 1; 
                 const correctOption = question.options.find(opt => opt.isCorrect);
                 
                 if (correctOption && userAnswer && correctOption._id.toString() === userAnswer) {
@@ -229,7 +231,7 @@ exports.submitAttempt = async (req, res, next) => {
                     totalScore += points;
                 }
             } else if (question.type === 'short-answer') {
-                totalPoints += question.points || 1; // This question is auto-gradable
+                totalPoints += question.points || 1; 
                 if (question.correctAnswer && userAnswer) {
                     isCorrect = question.correctAnswer.toLowerCase().trim() === String(userAnswer).toLowerCase().trim();
                     if (isCorrect) {
@@ -238,8 +240,7 @@ exports.submitAttempt = async (req, res, next) => {
                     }
                 }
             } else if (question.type === 'essay') {
-                hasEssay = true; // Mark quiz as needing manual grading
-                // Essays are not graded automatically, so isCorrect is false and points is 0
+                hasEssay = true; 
             }
 
             gradedAnswers.push({
@@ -250,17 +251,13 @@ exports.submitAttempt = async (req, res, next) => {
             });
         }
         
-        // Calculate percentage based *only* on auto-gradable questions
         const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
         const passingScore = quiz.passingScore || 70;
-        
-        // --- FIX: Only mark as 'passed' if there are NO essays AND percentage is met ---
         const passed = !hasEssay && percentage >= passingScore;
-        // --- END FIX ---
         
         const newAttempt = { 
             score: totalScore, 
-            totalPoints: totalPoints, // Store the total points that were auto-graded
+            totalPoints: totalPoints, 
             percentage: percentage, 
             passed: passed, 
             answers: gradedAnswers, 
@@ -272,7 +269,7 @@ exports.submitAttempt = async (req, res, next) => {
         if (quizAttemptRecord) {
             quizAttemptRecord.attempts.push(newAttempt);
             quizAttemptRecord.bestScore = Math.max(quizAttemptRecord.bestScore || 0, totalScore);
-            quizAttemptRecord.passed = quizAttemptRecord.passed || passed; // Only true if passed and no essays
+            quizAttemptRecord.passed = quizAttemptRecord.passed || passed; 
         } else {
             enrollment.quizAttempts.push({ 
                 quiz: quiz._id, 
@@ -281,34 +278,49 @@ exports.submitAttempt = async (req, res, next) => {
                 passed: passed 
             });
         }
-        await enrollment.save();
         
         // Update quiz analytics
         quiz.analytics.totalAttempts = (quiz.analytics.totalAttempts || 0) + 1;
         if(passed) {
-             quiz.analytics.passRate = (quiz.analytics.passRate || 0); // This logic needs review, maybe avg pass rate?
+             // This logic seems incomplete, but we'll leave it for now
+             quiz.analytics.passRate = (quiz.analytics.passRate || 0);
         }
-        await quiz.save();
+        
+        // --- 🐞 4. CHECK ACHIEVEMENTS (in memory) ---
+        const newQuizAchievements = await achievementService.checkQuizAchievements(user, quiz._id, percentage);
+        const newPassAchievements = await achievementService.checkQuizPassAchievements(user);
+        const allNewAchievements = [...newQuizAchievements, ...newPassAchievements];
+        // --- END FIX ---
 
-        // --- Log Activity ---
-        try {
-            await Activity.create({
-                user: req.user.userId,
-                type: 'QUIZ_ATTEMPT',
-                message: `You ${passed ? 'passed' : 'attempted'} the quiz: ${quiz.title} (Score: ${percentage}%)`,
-                course: quiz.course,
-                quiz: quiz._id,
-            });
-        } catch (activityError) {
-            console.error('Failed to log quiz attempt activity:', activityError);
-        }
+        // --- 🐞 5. SAVE ALL AT ONCE ---
+        await Promise.all([
+            enrollment.save(),
+            quiz.save(),
+            allNewAchievements.length > 0 ? user.save() : Promise.resolve() // Only save user if changed
+        ]);
+        // --- END FIX ---
+
+        // --- 🐞 6. LOG ACTIVITY (fire and forget) ---
+        Activity.create({
+            user: req.user.userId,
+            type: 'QUIZ_ATTEMPT',
+            message: `You ${passed ? 'passed' : 'attempted'} the quiz: ${quiz.title} (Score: ${percentage}%)`,
+            course: quiz.course,
+            quiz: quiz._id,
+        }).catch(err => console.error('Failed to log quiz attempt activity:', err));
         
-        // --- Check Achievements ---
-        achievementService.checkQuizAchievements(req.user.userId, quiz._id, percentage);
+        allNewAchievements.forEach(ach => {
+            Activity.create({
+              user: user._id,
+              type: 'CERTIFICATE_EARNED', 
+              message: `You earned an achievement: ${ach.title}!`,
+              course: quiz.course
+            }).catch(err => console.error("Failed to log achievement activity:", err));
+        });
+        // --- END FIX ---
         
-        // --- Prepare Response ---
+        // --- Prepare Response (Unchanged) ---
         const showResults = quiz.settings?.showResults !== 'never';
-        // Only show correct answers if setting is true AND it was an immediate show
         const showCorrectAnswers = quiz.settings?.showCorrectAnswers && quiz.settings?.showResults === 'immediately';
 
         res.json({
@@ -316,12 +328,11 @@ exports.submitAttempt = async (req, res, next) => {
             message: 'Quiz submitted successfully',
             data: { 
                 score: totalScore, 
-                totalPoints: totalPoints, // Send auto-graded total
+                totalPoints: totalPoints, 
                 percentage, 
                 passed, 
                 showResults,
                 showCorrectAnswers,
-                // Only send answer details if results are shown immediately
                 answers: showResults ? gradedAnswers : undefined 
             }
         });
@@ -335,6 +346,7 @@ exports.submitAttempt = async (req, res, next) => {
 // @route   GET /api/quizzes/:id/attempts
 // @access  Private (Student)
 exports.getAttempts = async (req, res, next) => {
+    // (This function is unchanged)
      try {
         const enrollment = await Enrollment.findOne({ student: req.user.userId, 'quizAttempts.quiz': req.params.id })
             .populate({ path: 'quizAttempts.quiz', select: 'title settings passingScore' });
@@ -347,8 +359,6 @@ exports.getAttempts = async (req, res, next) => {
         if (!quizAttemptRecord) { 
             return res.json({ success: true, data: { attempts: [], bestScore: 0, passed: false } }); 
         }
-        
-        // TODO: Potentially hide answers based on quiz settings
         
         res.json({ success: true, data: quizAttemptRecord });
     } catch (error) { console.error('Get quiz attempts error:', error); next(error); }

@@ -1,4 +1,3 @@
-// In: backend/server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -19,7 +18,8 @@ require('./models/CertificateTemplate');
 require('./models/Certificate');
 require('./models/Activity');
 require('./models/Achievement');
-require('./models/AssignmentSubmission'); // <--- ADD THIS LINE
+require('./models/AssignmentSubmission'); 
+require('./models/Category');
 // ----------------------------
 
 // Import routes
@@ -38,7 +38,9 @@ const activityRoutes = require('./routes/activity');
 const achievementRoutes = require('./routes/achievements');
 const utilsRoutes = require('./routes/utils');
 const assetsRoutes = require('./routes/assets');
-const submissionRoutes = require('./routes/submissions'); // <--- ADD THIS LINE
+const submissionRoutes = require('./routes/submissions'); 
+const categoryRoutes = require('./routes/categories'); 
+const assessmentRoutes = require('./routes/assessments'); // 🐞 --- ADD THIS LINE ---
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -47,6 +49,7 @@ const { handleMulterError } = require('./middleware/upload');
 
 const app = express();
 
+// ... (rest of your middleware: helmet, cors, rateLimit, webhooks, json) ...
 // Security middleware
 app.use(helmet());
 app.use(cors({
@@ -82,6 +85,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('MongoDB connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
+
 // Routes
 app.use('/v1/auth', authRoutes);
 app.use('/v1/users', userRoutes);
@@ -98,7 +102,9 @@ app.use('/v1/activities', activityRoutes);
 app.use('/v1/achievements', achievementRoutes);
 app.use('/v1/utils', utilsRoutes);
 app.use('/v1/assets', assetsRoutes);
-app.use('/v1/submissions', submissionRoutes); // <--- ADD THIS LINE
+app.use('/v1/submissions', submissionRoutes); 
+app.use('/v1/categories', categoryRoutes); 
+app.use('/v1/assessments', assessmentRoutes); // 🐞 --- ADD THIS LINE ---
 
 // Health check endpoint
 app.get('/v1/health', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // <-- 1. Import useNavigate
 import {
   Menu,
   X,
@@ -25,30 +25,45 @@ const Navigation: React.FC<NavigationProps> = ({
   const [isOpen, setIsOpen] = useState(false); // State for mobile menu
   const { user, isAuthenticated, logout, loading } = useAuth(); // Get auth state
   const location = useLocation();
+  
+  // --- 🐞 2. ADD STATE AND NAVIGATE ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  // --- END FIX ---
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
-  // Helper function for user initials
+  // Helper function for user initials (Unchanged)
   const getUserInitials = (name?: string | null): string => {
      if (!name) return 'U';
      const parts = name.trim().split(' ');
      if (parts.length > 1) {
-         // Use first char of first and last name part
          return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
      }
-     // Use first char of single name part
      return name.charAt(0).toUpperCase();
   };
 
-   // Helper function to safely get avatar URL string
+   // Helper function to safely get avatar URL string (Unchanged)
    const getAvatarUrl = (avatar?: { url?: string } | string): string | undefined => {
-       if (typeof avatar === 'string' && avatar && avatar !== 'no-photo.jpg') return avatar; // Handle string URL, ignore default placeholder name
-       if (typeof avatar === 'object' && avatar?.url && avatar.url !== 'no-photo.jpg') return avatar.url; // Handle object URL, ignore default placeholder name
-       return undefined; // Return undefined if no valid URL found
+       if (typeof avatar === 'string' && avatar && avatar !== 'no-photo.jpg') return avatar; 
+       if (typeof avatar === 'object' && avatar?.url && avatar.url !== 'no-photo.jpg') return avatar.url; 
+       return undefined; 
    };
 
+  // --- 🐞 3. CREATE SEARCH HANDLER ---
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Prevent page reload
+    if (searchQuery.trim()) {
+      // Navigate to the courses page with the search query
+      navigate(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery(""); // Clear the search bar
+      setIsOpen(false); // Close the mobile menu if it's open
+    }
+  };
+  // --- END FIX ---
 
-  // Show loading indicator during initial auth check
+
+  // Show loading indicator during initial auth check (Unchanged)
   if (loading) {
     return (
       <nav className="bg-white shadow-lg h-16 flex items-center justify-center sticky top-0 z-20">
@@ -63,7 +78,7 @@ const Navigation: React.FC<NavigationProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
-          {/* Logo Section */}
+          {/* Logo Section (Unchanged) */}
           <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center space-x-2" aria-label="Edges Africa Home">
               <div className="bg-primary-500 p-2 rounded-lg flex-shrink-0">
@@ -78,12 +93,12 @@ const Navigation: React.FC<NavigationProps> = ({
             </Link>
           </div>
 
-          {/* Desktop Navigation Links & Search */}
+          {/* Desktop Navigation Links & Search (Unchanged) */}
           <div className="hidden md:flex items-center space-x-8">
             <Link
               to="/courses"
               className={`font-body font-medium transition-colors duration-200 ${
-                location.pathname.startsWith("/courses") // Highlight if path starts with /courses
+                location.pathname.startsWith("/courses") 
                   ? "text-primary-500 border-b-2 border-primary-500 pb-1"
                   : "text-gray-700 hover:text-primary-500"
               }`}
@@ -101,7 +116,7 @@ const Navigation: React.FC<NavigationProps> = ({
               Instructors
             </Link>
             <a
-              href="https://edgesafrica.org/about" // Assuming external link
+              href="https://edgesafrica.org/about" 
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-700 hover:text-primary-500 font-body font-medium transition-colors duration-200"
@@ -109,41 +124,41 @@ const Navigation: React.FC<NavigationProps> = ({
               About
             </a>
 
-            {/* Search Bar (Needs state/functionality) */}
-            <div className="relative">
+            {/* --- 🐞 4. WIRE UP DESKTOP SEARCH --- */}
+            <form className="relative" onSubmit={handleSearchSubmit}>
               <label htmlFor="desktop-search" className="sr-only">Search courses</label>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
               <input
                 id="desktop-search"
                 type="text"
                 placeholder="Search courses..."
+                value={searchQuery} // <-- Bind value
+                onChange={(e) => setSearchQuery(e.target.value)} // <-- Bind change
                 className="pl-9 pr-4 py-2 w-56 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-body text-sm"
               />
-            </div>
+            </form>
+            {/* --- END FIX --- */}
           </div>
 
-          {/* Desktop User Actions */}
+          {/* Desktop User Actions (Unchanged) */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated && user ? (
               <>
                 {/* Notifications Icon */}
                 <button aria-label="Notifications" className="relative p-2 text-gray-600 hover:text-primary-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 rounded-full">
                   <Bell className="h-5 w-5" />
-                  {/* Example Notification Badge */}
                   <span className="absolute -top-0.5 -right-0.5 bg-secondary-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">3</span>
                 </button>
 
                 {/* Cart Icon */}
                 <button aria-label="Shopping Cart" className="relative p-2 text-gray-600 hover:text-primary-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 rounded-full">
                   <ShoppingCart className="h-5 w-5" />
-                   {/* Optional: Cart item count */}
                 </button>
 
                 {/* User Dropdown */}
                 <div className="relative group">
                   <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
                     <span className="sr-only">Open user menu</span>
-                     {/* Avatar or Initials */}
                      {getAvatarUrl(user.avatar) ? (
                          <img src={getAvatarUrl(user.avatar)} alt="User avatar" className="h-8 w-8 rounded-full object-cover border-2 border-white shadow" />
                      ) : (
@@ -151,7 +166,6 @@ const Navigation: React.FC<NavigationProps> = ({
                              {getUserInitials(user.name)}
                          </span>
                      )}
-                     {/* Optional: Show name next to avatar on larger screens */}
                      <span className="text-sm font-body font-medium text-gray-700 hidden lg:inline">{user.name}</span>
                   </button>
 
@@ -165,11 +179,9 @@ const Navigation: React.FC<NavigationProps> = ({
                       <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body" role="menuitem"> Dashboard </Link>
                       <Link to="/profile-settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body" role="menuitem"> Profile Settings </Link>
                       
-                      {/* --- FIX: Only show "My Courses" for students --- */}
                       {user.role === 'student' && (
                         <Link to="/my-courses" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-body" role="menuitem"> My Courses </Link>
                       )}
-                      {/* ----------------------------------------------- */}
 
                       <hr className="my-1 border-gray-200" />
                       <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 font-body" role="menuitem"> Logout </button>
@@ -178,7 +190,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 </div>
               </>
             ) : (
-              // Logged Out State: Login/Register Buttons
+              // Logged Out State: Login/Register Buttons (Unchanged)
               <div className="flex items-center space-x-3">
                 <button
                   type="button"
@@ -196,13 +208,13 @@ const Navigation: React.FC<NavigationProps> = ({
               </div>
             )}
 
-            {/* Language Toggle Button */}
+            {/* Language Toggle Button (Unchanged) */}
             <button aria-label="Select language" className="p-2 text-gray-600 hover:text-primary-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 rounded-full">
               <Globe className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button (Unchanged) */}
           <div className="md:hidden flex items-center">
              <button aria-label="Open menu" onClick={toggleMenu} className="ml-4 p-2 text-gray-700 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 rounded-md">
                  {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -218,12 +230,20 @@ const Navigation: React.FC<NavigationProps> = ({
               <Link to="/instructors" onClick={toggleMenu} className={`block px-3 py-2 rounded-md font-body font-medium ${ location.pathname === "/instructors" ? "bg-primary-50 text-primary-600" : "text-gray-700 hover:bg-gray-50 hover:text-primary-500" }`}> Instructors </Link>
               <a href="https://edgesafrica.org/about" target="_blank" rel="noopener noreferrer" onClick={toggleMenu} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-primary-500 font-body font-medium"> About </a>
 
-               {/* Mobile Search */}
-               <div className="relative px-3 pt-2 pb-3">
+               {/* --- 🐞 5. WIRE UP MOBILE SEARCH --- */}
+               <form className="relative px-3 pt-2 pb-3" onSubmit={handleSearchSubmit}>
                  <label htmlFor="mobile-search" className="sr-only">Search courses</label>
                  <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
-                 <input id="mobile-search" type="text" placeholder="Search..." className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 font-body text-sm" />
-               </div>
+                 <input 
+                   id="mobile-search" 
+                   type="text" 
+                   placeholder="Search..." 
+                   value={searchQuery} // <-- Bind value
+                   onChange={(e) => setSearchQuery(e.target.value)} // <-- Bind change
+                   className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 font-body text-sm" 
+                 />
+               </form>
+               {/* --- END FIX --- */}
 
               {isAuthenticated && user ? (
                 <>
@@ -238,11 +258,9 @@ const Navigation: React.FC<NavigationProps> = ({
                   <Link to="/dashboard" onClick={toggleMenu} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-primary-500 font-body font-medium"> Dashboard </Link>
                   <Link to="/profile-settings" onClick={toggleMenu} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-primary-500 font-body font-medium"> Profile Settings </Link>
                   
-                  {/* --- FIX: Only show "My Courses" for students --- */}
                   {user.role === 'student' && (
                     <Link to="/my-courses" onClick={toggleMenu} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-primary-500 font-body font-medium"> My Courses </Link>
                   )}
-                  {/* ----------------------------------------------- */}
 
                   <button onClick={() => { logout(); toggleMenu(); }} className="block w-full text-left px-3 py-2 rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 font-body font-medium"> Logout </button>
                 </>

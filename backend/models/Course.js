@@ -33,7 +33,7 @@ const courseSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: ['web-development', 'mobile-development', 'data-science', 'digital-marketing', 'business', 'design', 'other']
+    // 🐞 --- ENUM REMOVED --- 🐞
   },
   subcategory: String,
   level: {
@@ -41,6 +41,26 @@ const courseSchema = new mongoose.Schema({
     required: [true, 'Course level is required'],
     enum: ['Beginner', 'Intermediate', 'Advanced']
   },
+
+  // --- FIELD 1: FOR DISPLAY ---
+  // Stores the human-readable text (e.g., "8 Weeks, 10 Hours")
+  duration: String, 
+  
+  // --- FIELD 2: FOR DEADLINE LOGIC ---
+  // Stores the data needed for calculations
+  accessPeriod: {
+    value: {
+      type: Number,
+      min: [0, 'Access value cannot be negative']
+    },
+    unit: {
+      type: String,
+      enum: ['days', 'weeks', 'months', 'years', 'unlimited'],
+      default: 'unlimited'
+    }
+  },
+  // ------------------------------------
+
   language: {
     type: String,
     default: 'English'

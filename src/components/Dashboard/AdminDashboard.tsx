@@ -1,45 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Plus, 
-  Edit, 
-  Trash2, 
   Users, 
   BookOpen, 
   Award, 
   TrendingUp,
-  Search,
-  Filter,
-  MoreVertical,
-  Eye,
   Settings,
   FileText,
-  Clock,
-  Star,
+  Bell,
+  Loader2,
   DollarSign,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-  Bell
+  Star,
+  AlertCircle 
 } from 'lucide-react';
+import { useAuth, axiosInstance, User } from '../../contexts/AuthContext';
+import OverviewTab from '../Admin/OverviewTab';
+import CoursesTab from '../Admin/CoursesTab';
+import AssessmentsTab from '../Admin/AssessmentsTab';
+import UsersTab from '../Admin/UsersTab';
+import ArchiveModal from '../Admin/modals/ArchiveModal';
+import CategoryModal from '../Admin/modals/CategoryModal';
+import UserModal from '../Admin/modals/UserModal';
+import DeleteUserModal from '../Admin/modals/DeleteUserModal';
 
-interface Course {
-  id: string;
+// --- (All Interfaces are unchanged) ---
+export interface RecentEnrollment {
+  _id: string; 
+  student: {
+    name: string;
+    avatar?: {
+      url: string;
+    }
+  };
+  course: {
+    title: string;
+  };
+  createdAt: string; 
+}
+export interface CoursePerformance {
+  _id: string;
   title: string;
+  enrollmentCount: number; 
+  rating: {
+    average: number;
+  };
+}
+export interface AdminStats {
+  totalCourses: number;
+  totalStudents: number;
+  totalInstructors: number;
+  totalRevenue: number;
+  recentEnrollments: RecentEnrollment[]; 
+  topCourses: CoursePerformance[];       
+}
+export interface AdminUser extends User {
+  enrollmentCount: number;
+}
+export interface Course {
+  _id: string;
+  title: string;
+  slug: string;
   description: string;
-  instructor: string;
-  thumbnail: string;
+  instructor: {
+    _id: string;
+    name: string;
+    avatar?: { url: string };
+  };
+  thumbnail: {
+    url: string;
+    public_id: string;
+  };
   price: number;
-  studentsCount: number;
-  rating: number;
+  enrollmentCount: number;
+  rating: {
+    average: number;
+    count: number;
+  };
   status: 'published' | 'draft' | 'archived';
+  featured: boolean;
   createdAt: string;
   category: string;
   level: 'Beginner' | 'Intermediate' | 'Advanced';
-  assessments: number;
-  certificates: number;
 }
-
-interface Assessment {
+export interface Instructor {
+  _id: string;
+  name: string;
+  avatar?: { url: string };
+}
+export interface Assessment {
   id: string;
   courseId: string;
   title: string;
@@ -50,8 +98,7 @@ interface Assessment {
   passingScore: number;
   status: 'active' | 'draft';
 }
-
-interface Certificate {
+export interface Certificate {
   id: string;
   courseId: string;
   studentId: string;
@@ -61,872 +108,255 @@ interface Certificate {
   certificateId: string;
   status: 'issued' | 'revoked';
 }
+export interface CategoryOption {
+  _id: string;
+  value: string;
+  label: string;
+}
+// ---
 
 const AdminDashboard: React.FC = () => {
+  const { user } = useAuth();
+  
   const [activeTab, setActiveTab] = useState('overview');
-  const [showCourseModal, setShowCourseModal] = useState(false);
-  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+  
+  // Modals
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [courseToArchive, setCourseToArchive] = useState<Course | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<AdminUser | null>(null);
+  const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [deleteUserError, setDeleteUserError] = useState<string | null>(null);
 
-  // Mock data
-  const stats = {
-    totalCourses: 45,
-    totalStudents: 2340,
-    totalInstructors: 28,
-    totalRevenue: 125000
+  // Data
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterFeatured, setFilterFeatured] = useState('all');
+  
+  const navigate = useNavigate(); 
+
+  // --- (All useEffect hooks are unchanged) ---
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      setStatsError(null);
+      try {
+        const response = await axiosInstance.get('/analytics?type=dashboard');
+        if (response.data.success) {
+          setStats(response.data.data); 
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch dashboard stats');
+        }
+      } catch (err: any) {
+        console.error("Error fetching admin stats:", err);
+        setStatsError(err.response?.data?.message || 'An unexpected error occurred.');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    if (activeTab === 'overview' && !stats) {
+      fetchStats();
+    }
+  }, [activeTab, stats]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      setCoursesError(null);
+      try {
+        const params = new URLSearchParams();
+        params.append('status', filterStatus);
+        if (filterCategory !== 'all') params.append('category', filterCategory);
+        if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+        if (filterFeatured !== 'all') params.append('featured', filterFeatured);
+
+        const response = await axiosInstance.get(`/courses?${params.toString()}`); 
+        if (response.data.success) {
+          setCourses(response.data.data);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch courses');
+        }
+      } catch (err: any) {
+        console.error("Error fetching courses:", err);
+        setCoursesError(err.response?.data?.message || 'An unexpected error occurred.');
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+
+    if (activeTab === 'courses') {
+      fetchCourses();
+    }
+  }, [activeTab, debouncedSearchTerm, filterStatus, filterCategory, filterFeatured]);
+
+  useEffect(() => {
+    const fetchSupportingData = async () => {
+      if (instructors.length === 0) {
+        try {
+          const instructorResponse = await axiosInstance.get('/users?role=instructor');
+          if (instructorResponse.data.success) {
+            setInstructors(instructorResponse.data.data);
+          } else {
+            console.error("Failed to fetch instructors");
+          }
+        } catch (err) {
+          console.error("Error fetching instructors:", err);
+        }
+      }
+      
+      if (categories.length === 0) {
+        try {
+          const response = await axiosInstance.get('/categories');
+          if (response.data.success) {
+            setCategories(response.data.data);
+          } else {
+            console.error("Failed to fetch categories");
+          }
+        } catch (err) {
+          console.error("Error fetching categories:", err);
+        }
+      }
+    };
+
+    if (activeTab === 'courses' || activeTab === 'assessments' || activeTab === 'users') {
+      fetchSupportingData();
+    }
+  }, [activeTab, instructors.length, categories.length]);
+
+  
+  // --- (All Action Handlers are unchanged) ---
+  const handleViewCourse = (courseId: string) => {
+    window.open(`/course/${courseId}`, '_blank');
+  };
+  const handleEditCourse = (courseId: string) => {
+    navigate(`/instructor/course/edit/${courseId}`);
+  };
+  const openArchiveModal = (course: Course) => {
+    setCourseToArchive(course);
+    setShowArchiveModal(true);
+  };
+  const handleArchiveCourse = async () => {
+    if (!courseToArchive) return;
+    setIsArchiving(true);
+    try {
+      await axiosInstance.put(`/courses/${courseToArchive._id}`, {
+        status: 'archived',
+      });
+      setCourses(prevCourses => 
+        prevCourses.map(c => 
+          c._id === courseToArchive._id ? { ...c, status: 'archived' } : c
+        )
+      );
+      setShowArchiveModal(false);
+    } catch (err) {
+      console.error("Error archiving course:", err);
+    } finally {
+      setIsArchiving(false);
+      setCourseToArchive(null);
+    }
+  };
+  const handleToggleFeatured = async (course: Course, newFeaturedState: boolean) => {
+    setCourses(prevCourses =>
+      prevCourses.map(c =>
+        c._id === course._id ? { ...c, featured: newFeaturedState } : c
+      )
+    );
+    try {
+      await axiosInstance.patch(`/courses/${course._id}/toggle-featured`);
+    } catch (err) {
+      console.error("Error toggling featured status:", err);
+      setCourses(prevCourses =>
+        prevCourses.map(c =>
+          c._id === course._id ? { ...c, featured: !newFeaturedState } : c
+        )
+      );
+    }
+  };
+  const handleAddUser = () => {
+    setUserToEdit(null);
+    setShowUserModal(true);
+  };
+  const handleEditUser = (user: AdminUser) => {
+    setUserToEdit(user);
+    setShowUserModal(true);
+  };
+  const handleSaveUser = (savedUser: User) => {
+    const userWithCount = { ...savedUser, enrollmentCount: 0 } as AdminUser;
+    
+    if (userToEdit) {
+      setCourses(prev => prev.map(c => c._id === savedUser._id ? { ...c, ...userWithCount } : c));
+    } else {
+      setCourses(prev => [userWithCount, ...prev]);
+    }
+  };
+  const openDeleteUserModal = (user: AdminUser) => {
+    setUserToDelete(user);
+    setDeleteUserError(null);
+    setShowDeleteUserModal(true);
+  };
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    setIsDeletingUser(true);
+    setDeleteUserError(null);
+    try {
+      await axiosInstance.delete(`/users/${userToDelete._id}`);
+      // This will be fixed when we wire up UsersTab state
+      // setUsers(prev => prev.filter(u => u._id !== userToDelete._id));
+      setShowDeleteUserModal(false);
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      setDeleteUserError(err.response?.data?.message || 'A server error occurred.');
+    } finally {
+      setIsDeletingUser(false);
+    }
   };
 
-  const courses: Course[] = [
-    {
-      id: '1',
-      title: 'Full-Stack Web Development with React & Node.js',
-      description: 'Master modern web development with React, Node.js, MongoDB, and deploy scalable applications.',
-      instructor: 'Sarah Johnson',
-      thumbnail: 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg',
-      price: 89000,
-      studentsCount: 234,
-      rating: 4.9,
-      status: 'published',
-      createdAt: '2024-12-15',
-      category: 'Web Development',
-      level: 'Intermediate',
-      assessments: 5,
-      certificates: 180
-    },
-    {
-      id: '2',
-      title: 'Digital Marketing Mastery for African Businesses',
-      description: 'Learn digital marketing strategies tailored for the African market.',
-      instructor: 'Michael Okafor',
-      thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg',
-      price: 65000,
-      studentsCount: 189,
-      rating: 4.8,
-      status: 'published',
-      createdAt: '2024-12-10',
-      category: 'Marketing',
-      level: 'Beginner',
-      assessments: 3,
-      certificates: 145
-    },
-    {
-      id: '3',
-      title: 'Data Science & Machine Learning with Python',
-      description: 'Dive deep into data science, learn Python, pandas, sklearn, and build ML models.',
-      instructor: 'Dr. Amina Hassan',
-      thumbnail: 'https://images.pexels.com/photos/574069/pexels-photo-574069.jpeg',
-      price: 95000,
-      studentsCount: 156,
-      rating: 4.9,
-      status: 'draft',
-      createdAt: '2024-12-08',
-      category: 'Data Science',
-      level: 'Advanced',
-      assessments: 7,
-      certificates: 98
-    }
-  ];
 
-  const assessments: Assessment[] = [
-    {
-      id: '1',
-      courseId: '1',
-      title: 'React Fundamentals Quiz',
-      type: 'quiz',
-      questions: 20,
-      timeLimit: 30,
-      attempts: 3,
-      passingScore: 70,
-      status: 'active'
-    },
-    {
-      id: '2',
-      courseId: '1',
-      title: 'Final Project: E-commerce App',
-      type: 'project',
-      questions: 1,
-      timeLimit: 0,
-      attempts: 1,
-      passingScore: 80,
-      status: 'active'
-    }
-  ];
-
-  const certificates: Certificate[] = [
-    {
-      id: '1',
-      courseId: '1',
-      studentId: 'std1',
-      studentName: 'John Doe',
-      courseName: 'Full-Stack Web Development',
-      issueDate: '2024-12-20',
-      certificateId: 'CERT-2024-001',
-      status: 'issued'
-    },
-    {
-      id: '2',
-      courseId: '2',
-      studentId: 'std2',
-      studentName: 'Jane Smith',
-      courseName: 'Digital Marketing Mastery',
-      issueDate: '2024-12-18',
-      certificateId: 'CERT-2024-002',
-      status: 'issued'
-    }
-  ];
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-    }).format(price);
-  };
-
-  const CourseModal = () => (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-
-        <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-          <div className="bg-white px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-headline font-bold text-gray-900">
-                {selectedCourse ? 'Edit Course' : 'Create New Course'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowCourseModal(false);
-                  setSelectedCourse(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Course Title
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter course title"
-                    defaultValue={selectedCourse?.title}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Web Development</option>
-                    <option>Mobile Development</option>
-                    <option>Data Science</option>
-                    <option>Digital Marketing</option>
-                    <option>Business</option>
-                    <option>Design</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Level
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Beginner</option>
-                    <option>Intermediate</option>
-                    <option>Advanced</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Price (NGN)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="0"
-                    defaultValue={selectedCourse?.price}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Instructor
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Sarah Johnson</option>
-                    <option>Michael Okafor</option>
-                    <option>Dr. Amina Hassan</option>
-                    <option>James Okoye</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Draft</option>
-                    <option>Published</option>
-                    <option>Archived</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter course description"
-                  defaultValue={selectedCourse?.description}
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                  Course Thumbnail
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <div className="text-gray-400 mb-2">
-                    <FileText className="h-12 w-12 mx-auto" />
-                  </div>
-                  <p className="text-gray-600 font-body">Drop image here or click to upload</p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCourseModal(false);
-                    setSelectedCourse(null);
-                  }}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-body font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-body font-medium"
-                >
-                  {selectedCourse ? 'Update Course' : 'Create Course'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const AssessmentModal = () => (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-
-        <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
-          <div className="bg-white px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-headline font-bold text-gray-900">
-                {selectedAssessment ? 'Edit Assessment' : 'Create New Assessment'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAssessmentModal(false);
-                  setSelectedAssessment(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Assessment Title
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter assessment title"
-                    defaultValue={selectedAssessment?.title}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Course
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    {courses.map(course => (
-                      <option key={course.id} value={course.id}>{course.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Type
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Quiz</option>
-                    <option>Assignment</option>
-                    <option>Project</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Number of Questions
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="0"
-                    defaultValue={selectedAssessment?.questions}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Time Limit (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="0 (No limit)"
-                    defaultValue={selectedAssessment?.timeLimit}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Max Attempts
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="1"
-                    defaultValue={selectedAssessment?.attempts}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Passing Score (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="70"
-                    defaultValue={selectedAssessment?.passingScore}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    <option>Draft</option>
-                    <option>Active</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAssessmentModal(false);
-                    setSelectedAssessment(null);
-                  }}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-body font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-body font-medium"
-                >
-                  {selectedAssessment ? 'Update Assessment' : 'Create Assessment'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderOverview = () => (
-    <div className="space-y-8">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Total Courses</p>
-              <p className="text-3xl font-headline font-bold text-primary-500">{stats.totalCourses}</p>
-            </div>
-            <div className="bg-primary-100 p-3 rounded-lg">
-              <BookOpen className="h-6 w-6 text-primary-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Total Students</p>
-              <p className="text-3xl font-headline font-bold text-tech-500">{stats.totalStudents.toLocaleString()}</p>
-            </div>
-            <div className="bg-tech-100 p-3 rounded-lg">
-              <Users className="h-6 w-6 text-tech-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Instructors</p>
-              <p className="text-3xl font-headline font-bold text-secondary-500">{stats.totalInstructors}</p>
-            </div>
-            <div className="bg-secondary-100 p-3 rounded-lg">
-              <Award className="h-6 w-6 text-secondary-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Total Revenue</p>
-              <p className="text-3xl font-headline font-bold text-green-600">{formatPrice(stats.totalRevenue)}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <DollarSign className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">Recent Enrollments</h3>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="bg-primary-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-body font-semibold">
-                  {String.fromCharCode(65 + index)}
-                </div>
-                <div className="flex-1">
-                  <p className="font-body font-semibold text-gray-900">Student Name {index + 1}</p>
-                  <p className="text-sm text-gray-600 font-body">Enrolled in Web Development Course</p>
-                </div>
-                <span className="text-sm text-gray-500 font-body">2h ago</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="text-xl font-headline font-bold text-gray-900 mb-6">Course Performance</h3>
-          <div className="space-y-4">
-            {courses.slice(0, 4).map((course) => (
-              <div key={course.id} className="flex items-center justify-between">
-                <div>
-                  <p className="font-body font-semibold text-gray-900">{course.title}</p>
-                  <p className="text-sm text-gray-600 font-body">{course.studentsCount} students</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="h-4 w-4 text-secondary-500 fill-current" />
-                  <span className="font-body font-semibold">{course.rating}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCourses = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-headline font-bold text-gray-900">Course Management</h2>
-          <p className="text-gray-600 font-body">Create, edit, and manage all courses</p>
-        </div>
-        <button
-          onClick={() => setShowCourseModal(true)}
-          className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-body font-semibold flex items-center space-x-2"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Add Course</span>
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <div className="flex-1 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <input
-                type="text"
-                placeholder="Search courses..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option>All Status</option>
-              <option>Published</option>
-              <option>Draft</option>
-              <option>Archived</option>
-            </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option>All Categories</option>
-              <option>Web Development</option>
-              <option>Mobile Development</option>
-              <option>Data Science</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Courses Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Course</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Instructor</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Students</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Price</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Status</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {courses.map((course) => (
-                <tr key={course.id} className="hover:bg-gray-50">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-16 h-12 object-cover rounded-lg"
-                      />
-                      <div>
-                        <p className="font-body font-semibold text-gray-900">{course.title}</p>
-                        <p className="text-sm text-gray-600 font-body">{course.category} • {course.level}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-body text-gray-900">{course.instructor}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-body text-gray-900">{course.studentsCount}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-body font-semibold text-gray-900">{formatPrice(course.price)}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                      course.status === 'published' 
-                        ? 'bg-green-100 text-green-800'
-                        : course.status === 'draft'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-600 hover:text-primary-500 hover:bg-primary-50 rounded-lg">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedCourse(course);
-                          setShowCourseModal(true);
-                        }}
-                        className="p-2 text-gray-600 hover:text-tech-500 hover:bg-tech-50 rounded-lg"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAssessments = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-headline font-bold text-gray-900">Assessment Management</h2>
-          <p className="text-gray-600 font-body">Create and manage quizzes, assignments, and projects</p>
-        </div>
-        <button
-          onClick={() => setShowAssessmentModal(true)}
-          className="bg-secondary-500 hover:bg-secondary-600 text-white px-6 py-3 rounded-lg font-body font-semibold flex items-center space-x-2"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Add Assessment</span>
-        </button>
-      </div>
-
-      {/* Assessments Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {assessments.map((assessment) => {
-          const course = courses.find(c => c.id === assessment.courseId);
-          return (
-            <div key={assessment.id} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-headline font-bold text-lg text-gray-900 mb-2">{assessment.title}</h3>
-                  <p className="text-sm text-gray-600 font-body mb-2">{course?.title}</p>
-                  <span className={`px-2 py-1 rounded-full text-xs font-body font-semibold ${
-                    assessment.type === 'quiz' 
-                      ? 'bg-tech-100 text-tech-800'
-                      : assessment.type === 'assignment'
-                      ? 'bg-secondary-100 text-secondary-800'
-                      : 'bg-primary-100 text-primary-800'
-                  }`}>
-                    {assessment.type.charAt(0).toUpperCase() + assessment.type.slice(1)}
-                  </span>
-                </div>
-                <div className="relative">
-                  <button className="p-2 text-gray-400 hover:text-gray-600">
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 font-body">Questions:</span>
-                  <span className="font-body font-semibold">{assessment.questions}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 font-body">Time Limit:</span>
-                  <span className="font-body font-semibold">
-                    {assessment.timeLimit ? `${assessment.timeLimit} min` : 'No limit'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 font-body">Passing Score:</span>
-                  <span className="font-body font-semibold">{assessment.passingScore}%</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <span className={`px-2 py-1 rounded-full text-xs font-body font-semibold ${
-                  assessment.status === 'active' 
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {assessment.status.charAt(0).toUpperCase() + assessment.status.slice(1)}
-                </span>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedAssessment(assessment);
-                      setShowAssessmentModal(true);
-                    }}
-                    className="p-2 text-gray-600 hover:text-tech-500 hover:bg-tech-50 rounded-lg"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
+  // --- (Mock Render Function) ---
   const renderCertificates = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-headline font-bold text-gray-900">Certificate Management</h2>
-          <p className="text-gray-600 font-body">Issue, manage, and track student certificates</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <button className="bg-accent-500 hover:bg-accent-600 text-primary-500 px-6 py-3 rounded-lg font-body font-semibold flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
-            <span>Certificate Builder</span>
-          </button>
-          <button className="bg-secondary-500 hover:bg-secondary-600 text-white px-6 py-3 rounded-lg font-body font-semibold flex items-center space-x-2">
-            <Award className="h-5 w-5" />
-            <span>Issue Certificate</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Certificate Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Total Issued</p>
-              <p className="text-3xl font-headline font-bold text-secondary-500">423</p>
-            </div>
-            <div className="bg-secondary-100 p-3 rounded-lg">
-              <Award className="h-6 w-6 text-secondary-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">This Month</p>
-              <p className="text-3xl font-headline font-bold text-tech-500">45</p>
-            </div>
-            <div className="bg-tech-100 p-3 rounded-lg">
-              <Calendar className="h-6 w-6 text-tech-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Pending</p>
-              <p className="text-3xl font-headline font-bold text-yellow-500">12</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <Clock className="h-6 w-6 text-yellow-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-body text-gray-600 mb-1">Revoked</p>
-              <p className="text-3xl font-headline font-bold text-red-500">3</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-red-500" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Certificates Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Certificate ID</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Student</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Course</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Issue Date</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Status</th>
-                <th className="text-left py-4 px-6 font-body font-semibold text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {certificates.map((certificate) => (
-                <tr key={certificate.id} className="hover:bg-gray-50">
-                  <td className="py-4 px-6">
-                    <p className="font-body font-semibold text-primary-500">{certificate.certificateId}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-primary-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-body font-semibold">
-                        {certificate.studentName.charAt(0)}
-                      </div>
-                      <p className="font-body text-gray-900">{certificate.studentName}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-body text-gray-900">{certificate.courseName}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="font-body text-gray-900">{certificate.issueDate}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                      certificate.status === 'issued' 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {certificate.status.charAt(0).toUpperCase() + certificate.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-600 hover:text-primary-500 hover:bg-primary-50 rounded-lg">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div className="bg-white p-6 rounded-xl shadow-sm border">
+      <h3 className="text-xl font-headline font-bold text-gray-900 mb-4">Certificates</h3>
+      <p className="text-gray-600 font-body">This component has not been built yet.</p>
     </div>
   );
+  // ---
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header (Unchanged) */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-2xl font-headline font-bold text-primary-500">
+            <h1 className="text-xl sm:text-2xl font-headline font-bold text-primary-500 truncate pr-4">
               Admin Dashboard
             </h1>
             <div className="flex items-center space-x-4">
@@ -942,13 +372,14 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
+        {/* 🐞 --- RESPONSIVE NAVIGATION TABS --- 🐞 */}
         <div className="mb-8">
-          <nav className="flex space-x-8">
+          <nav className="flex space-x-4 md:space-x-8 overflow-x-auto whitespace-nowrap pb-2 md:overflow-x-visible md:justify-start">
             {[
               { id: 'overview', label: 'Overview', icon: TrendingUp },
               { id: 'courses', label: 'Courses', icon: BookOpen },
-              { id: 'assessments', label: 'Assessments', icon: FileText },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'assessments', label: 'Assignments', icon: FileText },
               { id: 'certificates', label: 'Certificates', icon: Award },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -956,30 +387,96 @@ const AdminDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-body font-medium transition-colors ${
+                  className={`flex-shrink-0 flex items-center space-x-2 px-3 py-2 md:px-4 md:py-2 rounded-lg font-body font-medium transition-colors text-sm md:text-base ${
                     activeTab === tab.id
                       ? 'bg-primary-500 text-white'
                       : 'text-gray-600 hover:text-primary-500 hover:bg-primary-50'
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
           </nav>
         </div>
+        {/* 🐞 --- END OF RESPONSIVE TABS --- 🐞 */}
 
         {/* Content */}
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'courses' && renderCourses()}
-        {activeTab === 'assessments' && renderAssessments()}
-        {activeTab === 'certificates' && renderCertificates()}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            stats={stats}
+            loading={statsLoading}
+            error={statsError}
+          />
+        )}
+        {activeTab === 'courses' && (
+          <CoursesTab
+            courses={courses}
+            categories={categories}
+            loading={coursesLoading}
+            error={coursesError}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterFeatured={filterFeatured}
+            setFilterFeatured={setFilterFeatured}
+            onToggleFeatured={handleToggleFeatured}
+            onViewCourse={handleViewCourse}
+            onEditCourse={handleEditCourse}
+            onArchiveCourse={openArchiveModal}
+            onManageCategories={() => setShowCategoryModal(true)}
+          />
+        )}
+        {activeTab === 'users' && (
+          <UsersTab
+            onAddUser={handleAddUser}
+            onEditUser={handleEditUser}
+            onDeleteUser={openDeleteUserModal}
+          />
+        )}
+        {activeTab === 'assessments' && <AssessmentsTab />}
+        {activeTab ==='certificates' && renderCertificates()}
       </div>
 
       {/* Modals */}
-      {showCourseModal && <CourseModal />}
-      {showAssessmentModal && <AssessmentModal />}
+      {showArchiveModal && (
+        <ArchiveModal
+          course={courseToArchive}
+          isArchiving={isArchiving}
+          onClose={() => setShowArchiveModal(false)}
+          onConfirm={handleArchiveCourse}
+        />
+      )}
+      
+      {showCategoryModal && (
+        <CategoryModal
+          categories={categories}
+          setCategories={setCategories}
+          onClose={() => setShowCategoryModal(false)}
+        />
+      )}
+      
+      {showUserModal && (
+        <UserModal
+          user={userToEdit}
+          onClose={() => setShowUserModal(false)}
+          onSave={handleSaveUser}
+        />
+      )}
+
+      {showDeleteUserModal && (
+        <DeleteUserModal
+          user={userToDelete}
+          isDeleting={isDeletingUser}
+          error={deleteUserError}
+          onClose={() => setShowDeleteUserModal(false)}
+          onConfirm={handleDeleteUser}
+        />
+      )}
     </div>
   );
 };

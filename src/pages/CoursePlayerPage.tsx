@@ -277,7 +277,7 @@ const CoursePlayerPage: React.FC = () => {
       const target = (event.target as HTMLElement).closest('a');
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl) { console.error("VITE_API_BASE_URL is not set!"); return; }
-      if (target && target.href && target.href.startsWith(baseUrl) && target.href.includes('/api/assets')) {
+      if (target && target.href && target.href.startsWith(baseUrl) && target.href.includes('/v1/assets')) {
         event.preventDefault();
         const urlParams = new URL(target.href).searchParams;
         const filename = urlParams.get('name') || 'downloaded-file';

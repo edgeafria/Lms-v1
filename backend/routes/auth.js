@@ -6,9 +6,12 @@ const QRCode = require('qrcode');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const authorize = require('../middleware/authorize'); // <-- 1. IMPORT authorize
 const sendEmail = require('../utils/sendEmail');
 const { OAuth2Client } = require('google-auth-library');
-const achievementService = require('../services/achievementService'); // <-- 1. Import Service
+const achievementService = require('../services/achievementService'); 
+const Activity = require('../models/Activity');
+const Achievement = require('../models/Achievement'); // <-- 2. IMPORT Achievement
 
 const router = express.Router();
 
@@ -17,7 +20,7 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 }
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// --- Utility Functions ---
+// --- Utility Functions (Unchanged) ---
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -37,7 +40,8 @@ const getStartOfDay = (date) => {
 };
 // -------------------------------------------------
 
-// @route   POST /api/auth/register
+// --- ALL YOUR OTHER ROUTES (register, login, google, etc.) ARE UNCHANGED ---
+// ... (register route) ...
 router.post('/register', [
     body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
     body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
@@ -60,16 +64,14 @@ router.post('/register', [
     }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
+// ... (login route) ...
 router.post('/login', [
     body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
     body('password').exists().withMessage('Password is required')
 ], handleValidationErrors, async (req, res, next) => {
     try {
         const { email, password, twoFactorToken } = req.body;
-        const user = await User.findOne({ email }).select('+password +socialLogin +lastLogin +loginStreak +earnedAchievements'); // Select fields
+        const user = await User.findOne({ email }).select('+password +socialLogin +lastLogin +loginStreak +earnedAchievements'); 
         if (!user) { return res.status(401).json({ success: false, message: 'Invalid credentials' }); }
         if (!user.password && user.socialLogin?.google?.id) {
              return res.status(400).json({ success: false, message: 'Account created with Google. Please use Sign in with Google.' });
@@ -79,7 +81,6 @@ router.post('/login', [
         if (!user.isActive) { return res.status(401).json({ success: false, message: 'Account has been deactivated' }); }
         if (user.twoFactorEnabled) { /* 2FA logic */ }
 
-        // --- LOGIN STREAK LOGIC ---
         const today = getStartOfDay(new Date());
         const lastLoginDay = user.lastLogin ? getStartOfDay(user.lastLogin) : null;
         if (lastLoginDay) {
@@ -89,12 +90,18 @@ router.post('/login', [
             else if (diffDays > 1) { user.loginStreak = 1; }
         } else { user.loginStreak = 1; }
         user.lastLogin = new Date();
+        
+        const newAchievements = await achievementService.checkLoginStreakAchievements(user);
+        
         await user.save();
         
-        // --- 2. CHECK FOR ACHIEVEMENTS ---
-        // Run in background (no await)
-        achievementService.checkLoginStreakAchievements(user);
-        // -------------------------------
+        newAchievements.forEach(ach => {
+            Activity.create({
+              user: user._id,
+              type: 'CERTIFICATE_EARNED', 
+              message: `You earned an achievement: ${ach.title}!`,
+            }).catch(err => console.error("Failed to log achievement activity:", err));
+        });
 
         const token = generateToken(user._id, user.role);
         res.json({
@@ -103,7 +110,7 @@ router.post('/login', [
                 id: user._id, name: user.name, email: user.email, role: user.role,
                 isVerified: user.isVerified, avatar: user.avatar,
                 twoFactorEnabled: user.twoFactorEnabled,
-                loginStreak: user.loginStreak // Send updated streak
+                loginStreak: user.loginStreak 
             }
         });
     } catch (error) {
@@ -112,9 +119,7 @@ router.post('/login', [
     }
 });
 
-// @route   POST /api/auth/google
-// @desc    Authenticate user using Google ID Token
-// @access  Public
+// ... (google route) ...
 router.post('/google', [
     body('credential').notEmpty().withMessage('Google credential token is required')
 ], handleValidationErrors, async (req, res, next) => {
@@ -127,10 +132,10 @@ router.post('/google', [
         }
         const { sub: googleId, email, name, picture: avatarUrl } = payload;
         
-        let user = await User.findOne({ 'socialLogin.google.id': googleId }).select('+lastLogin +loginStreak +earnedAchievements'); // Select fields
+        let user = await User.findOne({ 'socialLogin.google.id': googleId }).select('+lastLogin +loginStreak +earnedAchievements'); 
 
         if (!user) {
-            user = await User.findOne({ email: email }).select('+lastLogin +loginStreak +earnedAchievements'); // Select fields
+            user = await User.findOne({ email: email }).select('+lastLogin +loginStreak +earnedAchievements'); 
             if (user) {
                 // Link account
                 if (!user.socialLogin) user.socialLogin = { google: {}, facebook: {} };
@@ -154,7 +159,6 @@ router.post('/google', [
             }
         }
 
-        // --- LOGIN STREAK LOGIC (Also for Google) ---
         const today = getStartOfDay(new Date());
         const lastLoginDay = user.lastLogin ? getStartOfDay(user.lastLogin) : null;
         if (lastLoginDay) {
@@ -162,15 +166,22 @@ router.post('/google', [
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays === 1) { user.loginStreak = (user.loginStreak || 0) + 1; }
             else if (diffDays > 1) { user.loginStreak = 1; }
-        } else if (user.isNew) { // Only set to 1 if it's a new user doc
+        } else if (!lastLoginDay) { 
              user.loginStreak = 1;
         }
         user.lastLogin = new Date();
+        
+        const newAchievements = await achievementService.checkLoginStreakAchievements(user);
+
         await user.save();
         
-        // --- 2. CHECK FOR ACHIEVEMENTS ---
-        achievementService.checkLoginStreakAchievements(user);
-        // -------------------------------
+        newAchievements.forEach(ach => {
+            Activity.create({
+              user: user._id,
+              type: 'CERTIFICATE_EARNED', 
+              message: `You earned an achievement: ${ach.title}!`,
+            }).catch(err => console.error("Failed to log achievement activity:", err));
+        });
 
         const token = generateToken(user._id, user.role);
         res.status(200).json({
@@ -179,7 +190,7 @@ router.post('/google', [
                 id: user._id, name: user.name, email: user.email, role: user.role,
                 isVerified: user.isVerified, avatar: user.avatar,
                 twoFactorEnabled: user.twoFactorEnabled,
-                loginStreak: user.loginStreak // Send updated streak
+                loginStreak: user.loginStreak 
             }
         });
 
@@ -191,9 +202,8 @@ router.post('/google', [
         next(error);
     }
 });
-// ------------------------------------
 
-// @route   POST /api/auth/verify-email
+// ... (verify-email, forgot-password, reset-password, me, 2fa routes) ...
 router.post('/verify-email', async (req, res, next) => {
     try {
         const { token } = req.body;
@@ -204,8 +214,6 @@ router.post('/verify-email', async (req, res, next) => {
         res.json({ success: true, message: 'Email verified successfully' });
     } catch (error) { console.error('Email verification error:', error); next(error); }
 });
-
-// @route   POST /api/auth/forgot-password
 router.post('/forgot-password', [ body('email').isEmail().normalizeEmail() ], handleValidationErrors, async (req, res, next) => {
     try {
         const { email } = req.body; const user = await User.findOne({ email });
@@ -216,8 +224,6 @@ router.post('/forgot-password', [ body('email').isEmail().normalizeEmail() ], ha
         res.json({ success: true, message: 'Password reset email sent' });
     } catch (error) { console.error('Forgot password error:', error); next(error); }
 });
-
-// @route   POST /api/auth/reset-password
 router.post('/reset-password', [ body('token').exists(), body('password').isLength({ min: 6 }) ], handleValidationErrors, async (req, res, next) => {
     try {
         const { token, password } = req.body;
@@ -228,8 +234,6 @@ router.post('/reset-password', [ body('token').exists(), body('password').isLeng
         res.json({ success: true, message: 'Password reset successful' });
     } catch (error) { console.error('Reset password error:', error); next(error); }
 });
-
-// @route   GET /api/auth/me
 router.get('/me', auth, async (req, res, next) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
@@ -237,8 +241,6 @@ router.get('/me', auth, async (req, res, next) => {
         res.json({ success: true, user });
     } catch (error) { console.error('Get user error:', error); next(error); }
 });
-
-// @route   POST /api/auth/setup-2fa
 router.post('/setup-2fa', auth, async (req, res, next) => {
     try {
         const user = await User.findById(req.user.userId);
@@ -249,8 +251,6 @@ router.post('/setup-2fa', auth, async (req, res, next) => {
         res.json({ success: true, secret: secret.base32, qrCode: qrCodeUrl });
     } catch (error) { console.error('Setup 2FA error:', error); next(error); }
 });
-
-// @route   POST /api/auth/verify-2fa
 router.post('/verify-2fa', auth, [ body('token').exists() ], handleValidationErrors, async (req, res, next) => {
     try {
         const { token } = req.body; const user = await User.findById(req.user.userId);
@@ -262,8 +262,6 @@ router.post('/verify-2fa', auth, [ body('token').exists() ], handleValidationErr
         res.json({ success: true, message: 'Two-factor authentication enabled successfully' });
     } catch (error) { console.error('Verify 2FA error:', error); next(error); }
 });
-
-// @route   POST /api/auth/disable-2fa
 router.post('/disable-2fa', auth, async (req, res, next) => {
     try {
         const user = await User.findById(req.user.userId);

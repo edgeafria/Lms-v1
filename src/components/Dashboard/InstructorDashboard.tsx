@@ -43,7 +43,7 @@ interface InstructorStatsData {
     totalStudents: number;
     avgRating: number;
     avgCompletionRate: number;
-    avgStudyTime: number; 
+    totalStudyTime: number; // <-- 🐞 RENAMED FROM avgStudyTime
     avgQuizPassRate: number;
     period?: string;
 }
@@ -53,7 +53,7 @@ interface CalculatedStats {
     totalEarnings: number;
     avgRating: number;
     avgCompletionRate: number;
-    avgStudyTime: number;
+    totalStudyTime: number; // <-- 🐞 RENAMED FROM avgStudyTime
     avgQuizPassRate: number;
 }
 interface Review {
@@ -135,7 +135,7 @@ const formatTimeAgo = (dateString: string) => {
 const getAvatarUrl = (avatar?: { url?: string } | string, name?: string): string => {
    if (typeof avatar === 'string' && avatar && avatar !== 'no-photo.jpg') return avatar;
    if (typeof avatar === 'object' && avatar?.url && avatar.url !== 'no-photo.jpg') return avatar.url;
-   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'A')}&background=random&color=fff`;
+   return `https://ui-avatars.com/v1/?name=${encodeURIComponent(name || 'A')}&background=random&color=fff`;
 };
 // -----------------------------------------
 
@@ -150,7 +150,7 @@ const InstructorDashboard: React.FC = () => {
       totalEarnings: 0,
       avgRating: 0,
       avgCompletionRate: 0,
-      avgStudyTime: 0,
+      totalStudyTime: 0, // <-- 🐞 RENAMED FROM avgStudyTime
       avgQuizPassRate: 0,
   });
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
@@ -212,7 +212,7 @@ const InstructorDashboard: React.FC = () => {
                       totalStudents, 
                       avgRating,
                       avgCompletionRate,
-                      avgStudyTime,
+                      totalStudyTime, // <-- 🐞 RENAMED FROM avgStudyTime
                       avgQuizPassRate
                   } = statsRes.data.data;
                   setStats({
@@ -221,7 +221,7 @@ const InstructorDashboard: React.FC = () => {
                       totalStudents: totalStudents || 0,
                       avgRating: avgRating || 0,
                       avgCompletionRate: avgCompletionRate || 0,
-                      avgStudyTime: avgStudyTime || 0,
+                      totalStudyTime: totalStudyTime || 0, // <-- 🐞 RENAMED FROM avgStudyTime
                       avgQuizPassRate: avgQuizPassRate || 0,
                   });
               } else { 
@@ -324,16 +324,20 @@ const InstructorDashboard: React.FC = () => {
 
   }, [activeTab, revenueData, analyticsLoading, isLoading, reviews, submissions, qaLoading]); // <-- Added submissions
 
-  // --- NEW: Handle Grade Submission ---
+  // --- ### THIS IS THE FIX ### ---
   const handleGradeSubmission = async (passed: boolean) => {
     if (!gradingSubmission) return;
     setIsGrading(true);
 
     try {
+      // --- FIX: Convert boolean 'passed' to numeric 'grade' (1 for Pass, 0 for Fail) ---
+      const grade = passed ? 1 : 0;
+      // --------------------------------------------------------------------------
+
       const response = await axiosInstance.put(
         `/submissions/${gradingSubmission._id}/grade`,
         {
-          passed: passed,
+          grade: grade, // <-- SEND 'grade' (number) INSTEAD OF 'passed' (boolean)
           feedback: gradingFeedback
         }
       );
@@ -352,7 +356,7 @@ const InstructorDashboard: React.FC = () => {
     } catch (err) {
       console.error("Grading error:", err);
       if (axios.isAxiosError(err)) {
-        // Set error *inside* the modal? For now, just log
+        // You were seeing this error in your console
         alert(`Error: ${err.response?.data?.message || err.message}`);
       } else if (err instanceof Error) {
         alert(`Error: ${err.message}`);
@@ -665,8 +669,10 @@ const InstructorDashboard: React.FC = () => {
                     <span className="font-body font-semibold text-green-600">{stats.avgCompletionRate.toFixed(1)}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span className="font-body text-gray-700">Average Study Time</span>
-                    <span className="font-body font-semibold text-tech-500">{formatTime(stats.avgStudyTime)}</span>
+                    {/* --- 🐞 RENAMED THE LABEL --- */}
+                    <span className="font-body text-gray-700">Total Study Time</span>
+                    {/* --- 🐞 RENAMED THE VARIABLE --- */}
+                    <span className="font-body font-semibold text-tech-500">{formatTime(stats.totalStudyTime)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="font-body text-gray-700">Quiz Pass Rate</span>
