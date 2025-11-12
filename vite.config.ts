@@ -14,7 +14,12 @@ export default defineConfig(({ mode }) => {
     
     // The 'server' object contains all server-related config
     server: {
-      
+      host: "0.0.0.0",
+      port: 3000,
+      allowedHosts: [
+      "dashboard.edgesafrica.org",
+      "www.dashboard.edgesafrica.org",
+      ],
       // The 'proxy' object MUST be inside 'server'
       proxy: {
         '/v1': {
