@@ -811,9 +811,36 @@ router.get('/:id/students',
 router.put('/:id/thumbnail', // Changed route to PUT and path
     auth,
     authorize(['instructor', 'admin']),
-    upload.single('thumbnail'), 
+    (req, res, next) => {
+        // 🐞 --- START DEBUG LOGS --- 🐞
+        console.log(`--- [DEBUG] PUT /v1/courses/${req.params.id}/thumbnail ROUTE HIT ---`);
+        console.log("Checking Cloudinary Environment Variables *inside the route*:");
+        console.log("CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME ? "SET" : "!!! UNDEFINED !!!");
+        console.log("CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY ? "SET" : "!!! UNDEFINED !!!");
+        // Don't log the secret, just check if it exists
+        console.log("CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "SET (Exists)" : "!!! UNDEFINED !!!");
+        console.log("-----------------------------------------------------------");
+        // 🐞 --- END DEBUG LOGS --- 🐞
+        
+        // Pass to the upload middleware
+        upload.single('thumbnail')(req, res, (err) => {
+            // This is a custom error handler for multer
+            if (err) {
+                console.log("--- [DEBUG] ERROR FROM UPLOAD.SINGLE ---");
+                console.error(err);
+                console.log("-----------------------------------------");
+                // This will pass the error to our handleMulterError middleware
+                return next(err); 
+            }
+            // If no error, pass to the main controller
+            next();
+        });
+    }, 
     async (req, res, next) => {
         try {
+             // 🐞 --- ADDED LOG --- 🐞
+             console.log("[DEBUG] Thumbnail middleware finished. req.file data:", req.file);
+
              if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
                   return res.status(400).json({ success: false, message: 'Invalid course ID format' });
              }
@@ -823,7 +850,11 @@ router.put('/:id/thumbnail', // Changed route to PUT and path
             if (course.instructor.toString() !== req.user.userId.toString() && req.user.role !== 'admin') {
                 return res.status(403).json({ success: false, message: 'Not authorized to update this course' });
             }
-            if (!req.file) { return res.status(400).json({ success: false, message: 'No file uploaded. Please include a "thumbnail" file in your request.' }); }
+            if (!req.file) { 
+              // 🐞 --- ADDED LOG --- 🐞
+              console.log("[DEBUG] Upload error: req.file is not present in controller.");
+              return res.status(400).json({ success: false, message: 'No file uploaded. Multer error or file missing.' }); 
+            }
 
             // TODO: Delete old thumbnail from Cloudinary using course.thumbnail.public_id if it exists
 
@@ -832,12 +863,14 @@ router.put('/:id/thumbnail', // Changed route to PUT and path
                 url: req.file.path 
             };
             await course.save();
+            
+            // 🐞 --- ADDED LOG --- 🐞
+            console.log("[DEBUG] Thumbnail updated in DB successfully.");
             res.json({ success: true, message: 'Thumbnail updated successfully', data: { thumbnail: course.thumbnail } }); 
         } catch (error) {
-            console.error('Upload thumbnail error:', error);
+            console.error('[DEBUG] Error in thumbnail controller logic:', error);
             next(error);
         }
     });
-
 
 module.exports = router;
