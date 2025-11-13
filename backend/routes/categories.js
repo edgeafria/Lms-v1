@@ -19,8 +19,8 @@ const handleValidationErrors = (req, res, next) => {
 // @access  Private (Admin)
 router.get(
   '/',
-  auth,
-  authorize(['admin']),
+  // auth,
+  // authorize(['admin']),
   categoryController.getAllCategories
 );
 
