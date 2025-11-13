@@ -71,7 +71,29 @@ const HomePage: React.FC = () => {
   const [courses, setCourses] = useState<BackendCourse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // --- DEBUG LOGS START ---
+  // This will show you exactly what value is being read from the environment
+  console.log(
+    `[DEBUG] Raw import.meta.env.VITE_API_BASE_URL:`, 
+    import.meta.env.VITE_API_BASE_URL
+  );
+  console.log(
+    `[DEBUG] Current Vite Mode (import.meta.env.MODE):`, 
+    import.meta.env.MODE
+  );
+  // --- DEBUG LOGS END ---
+
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/v1';
+
+  // --- DEBUG LOGS START ---
+  // This will show you the final URL being used after the fallback logic
+  console.log(
+    `[DEBUG] Final API_BASE_URL variable being used:`, 
+    API_BASE_URL
+  );
+  // --- DEBUG LOGS END ---
+  
   // ------------------------------
 
   // --- Fetch Featured Courses on Mount ---
@@ -79,15 +101,26 @@ const HomePage: React.FC = () => {
     const fetchFeaturedCourses = async () => {
       setIsLoading(true);
       setError(null);
+      
+      const requestUrl = `${API_BASE_URL}/courses`;
+      const requestParams = {
+        status: 'published',
+        featured: true,
+        limit: 4,
+        sort: 'popular' // Or 'rating', 'newest'
+      };
+
+      // --- DEBUG LOGS START ---
+      // This logs the exact URL and params before the request is made
+      console.log(`[DEBUG] Attempting to fetch data from...`);
+      console.log(`[DEBUG] Full Request URL:`, requestUrl);
+      console.log(`[DEBUG] Request Params:`, JSON.stringify(requestParams, null, 2));
+      // --- DEBUG LOGS END ---
+
       try {
         // Fetch published, featured courses, limit to 4
-        const response = await axios.get<CoursesApiResponse>(`${API_BASE_URL}/courses`, {
-          params: {
-            status: 'published',
-            featured: true,
-            limit: 4,
-            sort: 'popular' // Or 'rating', 'newest'
-          }
+        const response = await axios.get<CoursesApiResponse>(requestUrl, {
+          params: requestParams
         });
 
         if (response.data.success) {
@@ -96,6 +129,11 @@ const HomePage: React.FC = () => {
           setError('Failed to fetch featured courses.');
         }
       } catch (err) {
+        // --- DEBUG LOGS START ---
+        // This logs the full error object if the request fails
+        console.error("[DEBUG] Full error object from catch block:", err);
+        // --- DEBUG LOGS END ---
+
         console.error("Error fetching featured courses:", err);
         if (axios.isAxiosError(err)) {
           setError(`Network Error: ${err.message}.`);
