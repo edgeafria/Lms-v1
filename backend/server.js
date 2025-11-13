@@ -84,13 +84,13 @@ app.options('*', cors(corsOptions));
 //   credentials: true
 // }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for dev
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/v1/', limiter);
+// // Rate limiting
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for dev
+//   message: 'Too many requests from this IP, please try again later.'
+// });
+// app.use('/v1/', limiter);
 
 // Special raw body parser for Stripe webhook *before* express.json()
 app.use('/v1/payments/webhook/stripe', express.raw({ type: 'application/json' }));
