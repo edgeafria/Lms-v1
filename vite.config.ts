@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false,
-          
+          rewrite:path=>path.replace(/^\/v1/,''),
           // --- THIS IS THE FIX FOR THE 'split' ERROR ---
           /**
            * Intercepts the proxy request to fix null cookie headers.
