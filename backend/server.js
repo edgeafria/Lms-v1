@@ -52,10 +52,37 @@ const app = express();
 // ... (rest of your middleware: helmet, cors, rateLimit, webhooks, json) ...
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true
-}));
+const allowedOrigins = [
+  'https://dashboard.edgesafrica.org',
+  'https://www.dashboard.edgesafrica.org',
+  // You can also add your local dev URL if you want to test without the proxy
+  'http://localhost:3000' ,
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Check if the incoming request's origin is in our whitelist
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      // Allow the request
+      callback(null, true);
+    } else {
+      // Block the request
+      callback(new Error('This origin is not allowed by CORS.'));
+    }
+  },
+  credentials: true, // Allow cookies to be sent (if you use them)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'] // Allow all standard methods
+};
+
+// Use the CORS middleware with your options
+app.use(cors(corsOptions));
+
+// Also, handle pre-flight (OPTIONS) requests
+app.options('*', cors(corsOptions));
+// app.use(cors({
+//   origin: process.env.CLIENT_URL || 'http://localhost:3000',
+//   credentials: true
+// }));
 
 // Rate limiting
 const limiter = rateLimit({
