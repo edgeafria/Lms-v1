@@ -101,8 +101,8 @@ app.use('/v1/payments/webhook/paystack', express.raw({ type: 'application/json' 
 // --------------------------------------------------------
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
