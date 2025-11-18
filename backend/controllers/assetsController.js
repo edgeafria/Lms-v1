@@ -36,7 +36,8 @@ exports.getAsset = async (req, res, next) => {
       resource_type: 'raw',
       sign_url: true,
       type: 'private',
-      attachment: filename || true // Force download
+      attachment: filename || true, // Force download
+      secure: true
     });
 
     // --- DEBUGGING LOGS ---
