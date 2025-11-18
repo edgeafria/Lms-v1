@@ -43,7 +43,7 @@ exports.getAsset = async (req, res, next) => {
     // --- DEBUGGING LOGS ---
     console.log('Generated Signed URL:', url);
     console.log('--- [Sending URL to frontend] ---');
-    // --- END DEBUGGING LOGS ---
+    // --- END DEBUGGING LOGS ---...
 
     // Send the signed URL back to the frontend
     res.json({ success: true, url: url });
