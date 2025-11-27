@@ -25,7 +25,179 @@
     <meta property="twitter:description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career.">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      
+      <style>
+        /* Reset */
+        body { margin: 0; padding: 0; background-color: #f9fafb; font-family: system-ui, -apple-system, sans-serif; }
+        
+        /* 1. ANIMATIONS */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse-fade { 
+          0% { opacity: 0.6; } 
+          50% { opacity: 1; } 
+          100% { opacity: 0.6; } 
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        /* 2. SKELETON LAYOUT (Option 3) */
+        .app-shell {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          width: 100vw;
+          overflow: hidden;
+        }
+
+        /* Navbar Skeleton */
+        .sk-nav {
+          height: 64px;
+          background: white;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          padding: 0 24px;
+          justify-content: space-between;
+        }
+
+        /* Sidebar + Content Wrapper */
+        .sk-body {
+          flex: 1;
+          display: flex;
+          background-color: #f3f4f6;
+        }
+
+        /* Sidebar Skeleton (Hidden on Mobile) */
+        .sk-sidebar {
+          width: 260px;
+          background: white;
+          border-right: 1px solid #e5e7eb;
+          height: 100%;
+          display: none; /* Mobile first */
+          flex-direction: column;
+          padding: 20px;
+          gap: 15px;
+        }
+        @media (min-width: 1024px) { 
+          .sk-sidebar { display: flex; } 
+        }
+
+        /* Main Content Skeleton */
+        .sk-main {
+          flex: 1;
+          padding: 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center; /* Center the spinner */
+        }
+
+        /* 3. BRAND PULSE (Option 2 - Applied to Logo Area) */
+        .sk-logo-area {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .sk-logo-circle {
+          width: 32px;
+          height: 32px;
+          background-color: #3b82f6; /* Brand Blue */
+          border-radius: 6px;
+          opacity: 0.8;
+          animation: pulse-fade 2s infinite ease-in-out;
+        }
+        .sk-logo-text {
+          width: 120px;
+          height: 16px;
+          background: #e5e7eb;
+          border-radius: 4px;
+        }
+
+        /* 4. TWIN SPINNER (Option 1 - Applied to Center) */
+        .center-loading-box {
+          background: white;
+          padding: 40px;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          max-width: 400px;
+          width: 90%;
+        }
+
+        .twin-spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid #e5e7eb;
+          border-top-color: #3b82f6; /* Brand Blue */
+          border-right-color: #3b82f6;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+          color: #374151;
+          font-weight: 600;
+          font-size: 1.1rem;
+        }
+        
+        .sub-text {
+          color: #9ca3af;
+          font-size: 0.875rem;
+        }
+
+        /* Extra: Shimmer Effect on Sidebar Items */
+        .sk-line {
+          height: 12px;
+          background: #f3f4f6;
+          border-radius: 4px;
+          width: 100%;
+        }
+        .sk-line.short { width: 60%; }
+        
+      </style>
+
+      <div class="app-shell">
+        
+        <div class="sk-nav">
+          <div class="sk-logo-area">
+            <div class="sk-logo-circle"></div> <div class="sk-logo-text"></div>
+          </div>
+          <div class="sk-logo-text" style="width: 40px; border-radius: 50%; height: 40px;"></div> </div>
+
+        <div class="sk-body">
+          <div class="sk-sidebar">
+            <div class="sk-line" style="height: 40px; margin-bottom: 20px;"></div>
+            <div class="sk-line"></div>
+            <div class="sk-line"></div>
+            <div class="sk-line"></div>
+            <div class="sk-line short"></div>
+          </div>
+
+          <div class="sk-main">
+            <div class="center-loading-box">
+              <div class="twin-spinner"></div> <div>
+                <div class="loading-text">Edges Africa LMS</div>
+                <div class="sub-text">Starting up server...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <noscript>
+        <div style="padding: 20px; color: red; text-align: center;">
+          JavaScript is required to use this application.
+        </div>
+      </noscript>
+
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

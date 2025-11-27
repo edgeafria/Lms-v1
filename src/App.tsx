@@ -3,6 +3,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import ServerAwake from "./components/ServerAwake";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import AuthModal from "./components/Auth/AuthModal";
@@ -35,56 +36,58 @@ function App() {
   };
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-white font-body">
-          <Navigation
-            // --- BUG FIX 3: Pass the EXACT props Navigation.tsx expects ---
-            onLoginClick={handleAuthModalOpen} // This function expects a boolean
-            onAuthMode={setAuthMode} // This function expects "login" or "register"
-          />
+    <ServerAwake> 
+      <AuthProvider>
+          <Router>
+            <div className="min-h-screen bg-white font-body">
+              <Navigation
+                // --- BUG FIX 3: Pass the EXACT props Navigation.tsx expects ---
+                onLoginClick={handleAuthModalOpen} // This function expects a boolean
+                onAuthMode={setAuthMode} // This function expects "login" or "register"
+              />
 
-          <main>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/course/:courseId" element={<CourseDetailPage />} />
-              
-              {/* --- NEW: Dedicated Auth Routes --- */}
-              <Route path="/login" element={<AuthPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              {/* ---------------------------------- */}
-              
-              <Route path="/instructors" element={<InstructorPage />} /> 
-              
-              {/* Authenticated Routes */}
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/learn/course/:courseId" element={<CoursePlayerPage />} />
-              <Route path="/my-courses" element={<MyCoursesPage />} />
-              <Route path="/profile-settings" element={<ProfileSettingsPage />} />
-              
-              {/* --- NEW: Quiz Player Route --- */}
-              <Route path="/quiz/:quizId" element={<QuizPlayerPage />} />
-              {/* ----------------------------- */}
-              
-              {/* Instructor/Admin Routes */}
-              <Route path="/instructor/course/new" element={<CourseBuilderPage />} />
-              <Route path="/instructor/course/edit/:courseId" element={<CourseBuilderPage />} />
-            </Routes>
-          </main>
+              <main>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/courses" element={<CoursesPage />} />
+                  <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                  
+                  {/* --- NEW: Dedicated Auth Routes --- */}
+                  <Route path="/login" element={<AuthPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  {/* ---------------------------------- */}
+                  
+                  <Route path="/instructors" element={<InstructorPage />} /> 
+                  
+                  {/* Authenticated Routes */}
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/learn/course/:courseId" element={<CoursePlayerPage />} />
+                  <Route path="/my-courses" element={<MyCoursesPage />} />
+                  <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+                  
+                  {/* --- NEW: Quiz Player Route --- */}
+                  <Route path="/quiz/:quizId" element={<QuizPlayerPage />} />
+                  {/* ----------------------------- */}
+                  
+                  {/* Instructor/Admin Routes */}
+                  <Route path="/instructor/course/new" element={<CourseBuilderPage />} />
+                  <Route path="/instructor/course/edit/:courseId" element={<CourseBuilderPage />} />
+                </Routes>
+              </main>
 
-          <Footer />
+              <Footer />
 
-          {/* This global modal is still here for your nav bar buttons */}
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            initialMode={authMode}
-          />
-        </div>
-      </Router>
-    </AuthProvider>
+              {/* This global modal is still here for your nav bar buttons */}
+              <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                initialMode={authMode}
+              />
+            </div>
+          </Router>
+        </AuthProvider>
+    </ServerAwake>
   );
 }
 
