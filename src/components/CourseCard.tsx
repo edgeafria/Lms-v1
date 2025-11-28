@@ -106,7 +106,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid', onCour
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group flex flex-col font-body">
       {/* Thumbnail as Link - USES course.id */}
       <Link to={`/course/${id}`} className="relative block overflow-hidden">
-        <img
+        <img loading="lazy"
           src={thumbnail}
           alt={title}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
@@ -150,7 +150,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, layout = 'grid', onCour
      <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group flex font-body">
       {/* Thumbnail as Link - USES course.id */}
       <Link to={`/course/${id}`} className="relative w-64 h-full flex-shrink-0 overflow-hidden block">
-        <img src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { /* Fallback */ }} />
+        <img loading="lazy" src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { /* Fallback */ }} />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"> <span className="bg-secondary-500 text-white p-3 rounded-full"> <Play className="h-5 w-5 ml-0.5" /> </span> </div>
         <div className="absolute top-3 left-3 flex space-x-1"> {isNew && <span className="bg-tech-500 text-white px-2 py-1 rounded-full text-xs font-semibold">NEW</span>} {isFeatured && <span className="bg-secondary-500 text-white px-2 py-1 rounded-full text-xs font-semibold">Featured</span>} </div>
       </Link>

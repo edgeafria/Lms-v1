@@ -260,7 +260,7 @@ const CoursesTab: React.FC<CoursesTabProps> = ({
                 <tr key={course._id} className="hover:bg-gray-50">
                   <td className="py-4 px-6">
                     <div className="flex items-center space-x-4">
-                      <img
+                      <img loading="lazy"
                         src={course.thumbnail?.url || 'https://via.placeholder.com/150'}
                         alt={course.title}
                         className="w-16 h-12 object-cover rounded-lg"

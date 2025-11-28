@@ -430,7 +430,7 @@ const InstructorDashboard: React.FC = () => {
             {courses.filter(c => c.status === 'published').slice(0, 3).map((course) => (
               <div key={course._id} className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4 min-w-0">
-                  <img src={course.thumbnail?.url || `https://placehold.co/100x60?text=Course`} alt={course.title} className="w-12 h-8 object-cover rounded flex-shrink-0" />
+                  <img loading="lazy" src={course.thumbnail?.url || `https://placehold.co/100x60?text=Course`} alt={course.title} className="w-12 h-8 object-cover rounded flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-body font-semibold text-gray-900 line-clamp-1">{course.title}</p>
                     <p className="text-sm text-gray-600 font-body">{course.enrollmentCount || 0} students</p>
@@ -529,7 +529,7 @@ const InstructorDashboard: React.FC = () => {
                     return (
                       <div key={course._id} className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow flex flex-col">
                         <div className="relative">
-                          <img
+                          <img loading="lazy"
                             src={course.thumbnail?.url || `https://placehold.co/600x400/006747/FFF?text=${encodeURIComponent(course.title)}`}
                             alt={course.title}
                             className="w-full h-48 object-cover"
@@ -745,7 +745,7 @@ const InstructorDashboard: React.FC = () => {
             <div key={submission._id} className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4 gap-4">
                 <div className="flex items-start space-x-4 min-w-0">
-                  <img 
+                  <img loading="lazy"
                     src={getAvatarUrl(submission.student?.avatar, submission.student?.name)} 
                     alt={submission.student?.name} 
                     className="w-10 h-10 rounded-full object-cover flex-shrink-0"

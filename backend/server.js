@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression'); // 🟢 Added Compression Import
 require('dotenv').config();
 
 // --- Pre-load all models ---
@@ -40,7 +41,7 @@ const utilsRoutes = require('./routes/utils');
 const assetsRoutes = require('./routes/assets');
 const submissionRoutes = require('./routes/submissions'); 
 const categoryRoutes = require('./routes/categories'); 
-const assessmentRoutes = require('./routes/assessments'); // 🐞 --- ADD THIS LINE ---
+const assessmentRoutes = require('./routes/assessments');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -49,9 +50,12 @@ const { handleMulterError } = require('./middleware/upload');
 
 const app = express();
 
-// ... (rest of your middleware: helmet, cors, rateLimit, webhooks, json) ...
+// 🟢 Enable GZIP Compression (Must be before routes)
+app.use(compression());
+
 // Security middleware
 app.use(helmet());
+
 const allowedOrigins = [
   'https://dashboard.edgesafrica.org',
   'https://www.dashboard.edgesafrica.org',
@@ -79,18 +83,6 @@ app.use(cors(corsOptions));
 
 // Also, handle pre-flight (OPTIONS) requests
 app.options('*', cors(corsOptions));
-// app.use(cors({
-//   origin: process.env.CLIENT_URL || 'http://localhost:3000',
-//   credentials: true
-// }));
-
-// // Rate limiting
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: process.env.NODE_ENV === 'development' ? 500 : 100, // Higher limit for dev
-//   message: 'Too many requests from this IP, please try again later.'
-// });
-// app.use('/v1/', limiter);
 
 // Special raw body parser for Stripe webhook *before* express.json()
 app.use('/v1/payments/webhook/stripe', express.raw({ type: 'application/json' }));
@@ -131,7 +123,7 @@ app.use('/v1/utils', utilsRoutes);
 app.use('/v1/assets', assetsRoutes);
 app.use('/v1/submissions', submissionRoutes); 
 app.use('/v1/categories', categoryRoutes); 
-app.use('/v1/assessments', assessmentRoutes); // 🐞 --- ADD THIS LINE ---
+app.use('/v1/assessments', assessmentRoutes);
 
 // Health check endpoint
 app.get('/v1/health', (req, res) => {

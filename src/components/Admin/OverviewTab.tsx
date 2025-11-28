@@ -113,7 +113,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ stats, loading, error }) => {
               stats.recentEnrollments.map((enrollment) => (
                 <div key={enrollment._id} className="flex items-center space-x-4">
                   {enrollment.student?.avatar?.url ? (
-                    <img 
+                    <img loading="lazy"
                       src={enrollment.student.avatar.url} 
                       alt={enrollment.student.name}
                       className="w-10 h-10 rounded-full object-cover"

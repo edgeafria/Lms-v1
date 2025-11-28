@@ -216,7 +216,7 @@ const ProfileSettingsPage: React.FC = () => {
                 )}
                 <div className="flex items-center space-x-6">
                     <div className="relative">
-                        <img src={avatarPreview || `https://placehold.co/100x100/cccccc/000?text=${user.name.charAt(0)}`} alt="Avatar preview" className="w-24 h-24 rounded-full object-cover border-4 border-gray-100 shadow-sm" />
+                        <img loading="lazy" src={avatarPreview || `https://placehold.co/100x100/cccccc/000?text=${user.name.charAt(0)}`} alt="Avatar preview" className="w-24 h-24 rounded-full object-cover border-4 border-gray-100 shadow-sm" />
                         <label htmlFor="avatar-upload" className="absolute -bottom-2 -right-2 bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-full cursor-pointer shadow-md transition-transform transform hover:scale-110" title="Change profile picture">
                             <Camera className="w-4 h-4" />
                             <input type="file" id="avatar-upload" name="avatar" accept="image/png, image/jpeg, image/gif" onChange={handleAvatarChange} className="sr-only" />

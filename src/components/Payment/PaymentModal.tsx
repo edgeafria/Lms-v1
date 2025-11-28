@@ -134,7 +134,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, course, on
           {/* Course Info */}
           <div className="px-6 pb-4">
             <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <img
+              <img loading="lazy"
                 src={course.thumbnail}
                 alt={course.title}
                 className="w-16 h-12 object-cover rounded"

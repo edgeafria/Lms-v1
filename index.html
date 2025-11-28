@@ -9,6 +9,10 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <link rel="preconnect" href="https://api.edgesafrica.org" crossorigin>
+    <link rel="dns-prefetch" href="https://api.edgesafrica.org">
+
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
@@ -18,7 +22,7 @@
         /* Base Reset */
         body { margin: 0; padding: 0; background-color: #f9fafb; font-family: 'Open Sans', system-ui, sans-serif; }
         
-        /* 1. ANIMATIONS */
+        /* ANIMATIONS */
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes pulse-fade { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         @keyframes slide-up-fade { 
@@ -28,72 +32,52 @@
           100% { opacity: 0; transform: translateY(-10px); } 
         }
 
-        /* 2. SKELETON LAYOUT */
+        /* LAYOUT */
         .app-shell { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
-
-        /* Navbar Skeleton */
         .sk-nav {
           height: 64px; background: white; border-bottom: 1px solid #e5e7eb;
           display: flex; align-items: center; padding: 0 24px; justify-content: space-between;
         }
-
-        /* Sidebar + Content Wrapper */
         .sk-body { flex: 1; display: flex; background-color: #f3f4f6; }
-
-        /* Sidebar Skeleton */
         .sk-sidebar {
           width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100%;
           display: none; flex-direction: column; padding: 20px; gap: 15px;
         }
         @media (min-width: 1024px) { .sk-sidebar { display: flex; } }
-
-        /* Main Content */
         .sk-main { flex: 1; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* 3. BRANDING */
+        /* COMPONENTS */
         .sk-logo-area { display: flex; align-items: center; gap: 10px; }
         .sk-logo-circle {
-          width: 32px; height: 32px; background-color: #29ec50; /* Brand Green */
+          width: 32px; height: 32px; background-color: #29ec50; 
           border-radius: 6px; opacity: 0.8; animation: pulse-fade 2s infinite ease-in-out;
         }
         .sk-logo-text { width: 120px; height: 16px; background: #e5e7eb; border-radius: 4px; }
-
-        /* 4. LOADING CARD */
+        
         .center-loading-box {
           background: white; padding: 40px; border-radius: 12px;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
           text-align: center; display: flex; flex-direction: column; align-items: center;
           gap: 20px; max-width: 450px; width: 90%;
         }
-
         .twin-spinner {
           width: 50px; height: 50px;
           border: 4px solid #e5e7eb;
-          border-top-color: #3bf66a; /* Light Green */
-          border-right-color: #23ca3a; /* Dark Green */
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
+          border-top-color: #3bf66a; border-right-color: #23ca3a;
+          border-radius: 50%; animation: spin 1s linear infinite;
         }
-
         .loading-title { color: #374151; font-weight: 700; font-size: 1.2rem; margin-bottom: 5px; }
         
-        /* 5. CHANGING MESSAGE STYLE */
-        .fun-message-box {
-          height: 50px; /* Fixed height to prevent jumping */
-          display: flex; align-items: center; justify-content: center;
-        }
+        /* MESSAGES & BUTTONS */
+        .fun-message-box { height: 50px; display: flex; align-items: center; justify-content: center; }
         .message-text {
           color: #6b7280; font-size: 0.95rem; font-style: italic;
           animation: slide-up-fade 4s ease-in-out infinite;
         }
-
         .sk-line { height: 12px; background: #f3f4f6; border-radius: 4px; width: 100%; }
         .sk-line.short { width: 60%; }
         
-        /* Manual Retry Button */
-        .manual-retry-container {
-            position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; z-index: 9999;
-        }
+        .manual-retry-container { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; z-index: 9999; }
         .manual-retry-btn {
             display: none; background: #23ca3a; color: white; border: none; 
             padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer;
@@ -103,60 +87,42 @@
       </style>
 
       <div id="static-loader-content" class="app-shell">
-        
         <div class="sk-nav">
-          <div class="sk-logo-area">
-            <div class="sk-logo-circle"></div> <div class="sk-logo-text"></div>
-          </div>
+          <div class="sk-logo-area"><div class="sk-logo-circle"></div> <div class="sk-logo-text"></div></div>
           <div class="sk-logo-text" style="width: 40px; border-radius: 50%; height: 40px;"></div> 
         </div>
-
         <div class="sk-body">
           <div class="sk-sidebar">
             <div class="sk-line" style="height: 40px; margin-bottom: 20px;"></div>
             <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line short"></div>
           </div>
-
           <div class="sk-main">
             <div class="center-loading-box">
               <div class="twin-spinner"></div> 
               <div>
                 <div class="loading-title">Edges Africa LMS</div>
-                
-                <div class="fun-message-box">
-                  <div id="dynamic-message" class="message-text">Preparing your classroom...</div>
-                </div>
-
+                <div class="fun-message-box"><div id="dynamic-message" class="message-text">Preparing your classroom...</div></div>
               </div>
             </div>
           </div>
         </div>
-
         <div class="manual-retry-container">
-           <button id="manual-retry-btn" class="manual-retry-btn" onclick="window.location.reload()">
-             Network is slow? Tap to Reload
-           </button>
+           <button id="manual-retry-btn" class="manual-retry-btn" onclick="window.location.reload()">Network is slow? Tap to Reload</button>
         </div>
-
       </div>
       
-      <noscript>
-        <div style="padding: 20px; color: red; text-align: center;">Enable JavaScript to continue.</div>
-      </noscript>
-
+      <noscript><div style="padding: 20px; color: red; text-align: center;">Enable JavaScript to continue.</div></noscript>
     </div>
 
     <script>
       (function() {
         var loader = document.getElementById('static-loader-content');
-        if (!loader) return; // React already loaded, exit.
+        if (!loader) return;
 
-        // --- 1. CONFIGURATION ---
-        var AUTO_RELOAD_TIME = 60000; // 1 Minute
-        var MANUAL_BTN_TIME = 90000;  // 1.5 Minutes
+        var AUTO_RELOAD_TIME = 60000; // 60s
+        var MANUAL_BTN_TIME = 90000;  // 90s
         var STORAGE_KEY = 'edges_retry_attempt';
         
-        // --- 2. FUN MESSAGES LIST ---
         var messages = [
           "Preparing your digital classroom...",
           "Did you know? Consistency is the key to mastery.",
@@ -166,55 +132,39 @@
           "Almost there..."
         ];
 
-        // --- 3. MESSAGE ROTATOR (Every 4 seconds) ---
         var msgIndex = 0;
         var msgElement = document.getElementById('dynamic-message');
         
         setInterval(function() {
-          if (!document.getElementById('static-loader-content')) return; // Stop if app loaded
+          if (!document.getElementById('static-loader-content')) return;
           msgIndex = (msgIndex + 1) % messages.length;
-          
-          // Reset animation to force replay
           msgElement.style.animation = 'none';
-          msgElement.offsetHeight; /* trigger reflow */
+          msgElement.offsetHeight; 
           msgElement.style.animation = 'slide-up-fade 4s ease-in-out infinite';
-          
           msgElement.innerText = messages[msgIndex];
         }, 4000);
 
-
-        // --- 4. RELOAD LOGIC ---
         var hasReloaded = sessionStorage.getItem(STORAGE_KEY);
-
         if (!hasReloaded) {
-          // === FIRST VISIT ===
           setTimeout(function() {
             if (document.getElementById('static-loader-content')) {
                console.warn("First attempt timeout. Reloading...");
                sessionStorage.setItem(STORAGE_KEY, 'true');
                window.location.reload();
             }
-          }, AUTO_RELOAD_TIME); // 60s
+          }, AUTO_RELOAD_TIME);
         } else {
-          // === SECOND VISIT (After Reload) ===
-          
-          // Clear flag so next visit is fresh
           setTimeout(() => sessionStorage.removeItem(STORAGE_KEY), 5000);
-
           setTimeout(function() {
             if (document.getElementById('static-loader-content')) {
-               // Show Manual Button after 1.5 mins
                var btn = document.getElementById('manual-retry-btn');
                if (btn) btn.style.display = 'inline-block';
-               
-               // Update message to be honest
                msgElement.innerText = "Connection is taking longer than usual...";
-               msgElement.style.animation = 'none'; // Stop animating
+               msgElement.style.animation = 'none';
                msgElement.style.opacity = '1';
             }
-          }, MANUAL_BTN_TIME); // 90s
+          }, MANUAL_BTN_TIME);
         }
-
       })();
     </script>
 

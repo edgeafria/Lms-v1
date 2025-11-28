@@ -490,7 +490,7 @@ const CourseDetails: React.FC<CourseDetailsProps> = ({
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow-lg p-6 text-gray-900 lg:sticky lg:top-24">
                   <div className="relative mb-4 aspect-video">
-                      <img
+                      <img loading="lazy"
                         src={course.thumbnail?.url || `https://placehold.co/600x400?text=Preview`}
                         alt={course.title}
                         className="absolute inset-0 w-full h-full object-cover rounded-lg"

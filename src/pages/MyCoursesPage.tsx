@@ -108,7 +108,7 @@ const MyCoursesPage: React.FC = () => {
                 key={enrollment._id}
                 className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow"
               >
-                <img
+                <img loading="lazy"
                   src={enrollment.course.thumbnail?.url || `https://placehold.co/320x180?text=${encodeURIComponent(enrollment.course.title)}`}
                   alt={enrollment.course.title}
                   className="w-full sm:w-48 h-32 sm:h-28 object-cover rounded-lg flex-shrink-0"

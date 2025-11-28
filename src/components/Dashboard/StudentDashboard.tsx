@@ -348,7 +348,7 @@ const StudentDashboard: React.FC = () => {
                     {recentCourses.length > 0 ? (
                         recentCourses.map((enrollment) => (
                             <div key={enrollment._id} className="flex items-center space-x-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
-                                <img src={enrollment.course.thumbnail?.url || `https://placehold.co/160x90/006747/FFF?text=${encodeURIComponent(enrollment.course.title)}`} alt={enrollment.course.title} className="w-20 h-14 object-cover rounded-lg" />
+                                <img loading="lazy" src={enrollment.course.thumbnail?.url || `https://placehold.co/160x90/006747/FFF?text=${encodeURIComponent(enrollment.course.title)}`} alt={enrollment.course.title} className="w-20 h-14 object-cover rounded-lg" />
                                 <div className="flex-1">
                                     <h4 className="font-body font-semibold text-gray-900 mb-1 line-clamp-1"> {enrollment.course.title} </h4>
                                     <p className="text-sm text-gray-600 font-body mb-2"> by {enrollment.course.instructor.name} </p>

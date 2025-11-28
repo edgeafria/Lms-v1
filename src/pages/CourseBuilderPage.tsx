@@ -744,7 +744,7 @@ const CourseBuilder: React.FC = () => {
         <label className="block text-sm font-body font-medium text-gray-700 mb-2"> Course Thumbnail </label>
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center">
           {courseData.thumbnail && (
-             <img src={courseData.thumbnail} alt="Thumbnail preview" className="w-32 h-auto sm:w-48 mx-auto mb-4 rounded-lg shadow-sm"/>
+             <img loading="lazy" src={courseData.thumbnail} alt="Thumbnail preview" className="w-32 h-auto sm:w-48 mx-auto mb-4 rounded-lg shadow-sm"/>
           )}
           <Upload className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 font-body mb-2 text-sm sm:text-base">Drop your thumbnail here or click</p>

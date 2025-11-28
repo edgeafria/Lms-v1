@@ -341,7 +341,7 @@ const UsersTab: React.FC<UsersTabProps> = ({ onAddUser, onEditUser, onDeleteUser
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-3">
                         {user.avatar?.url ? (
-                          <img src={user.avatar.url} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                          <img loading="lazy" src={user.avatar.url} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
                         ) : (
                           <span className="w-10 h-10 rounded-full bg-primary-100 text-primary-500 flex items-center justify-center font-bold">
                             {getInitials(user.name)}
