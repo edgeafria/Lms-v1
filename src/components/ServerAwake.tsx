@@ -52,7 +52,7 @@ const ServerAwake: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {/* Navbar Skeleton */}
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-md opacity-80 animate-pulse"></div>
+            <div className="w-8 h-8 bg-green-500 rounded-md opacity-80 animate-pulse"></div>
             <div className="w-32 h-4 bg-gray-200 rounded"></div>
           </div>
           <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -75,7 +75,7 @@ const ServerAwake: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="bg-white p-10 rounded-xl shadow-sm text-center flex flex-col items-center gap-6 w-[90%] max-w-md">
               
               {/* Spinner */}
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 border-r-blue-500 rounded-full animate-spin"></div>
+              <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 border-r-green-500 rounded-full animate-spin"></div>
               
               <div>
                 <h2 className="text-gray-800 font-bold text-xl mb-2">Edges Africa LMS</h2>
