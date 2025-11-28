@@ -5,184 +5,101 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Edges Africa C 2025 - Learning Management System</title>
-    <meta name="description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career." />
+    <meta name="description" content="Empowering African minds with world-class education." />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://edgesafrica.com/">
-    <meta property="og:title" content="Edges Africa C 2025 - Learning Management System">
-    <meta property="og:description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career.">
-    
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://edgesafrica.com/">
-    <meta property="twitter:title" content="Edges Africa C 2025 - Learning Management System">
-    <meta property="twitter:description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career.">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root">
       
       <style>
-        /* Reset */
-        body { margin: 0; padding: 0; background-color: #f9fafb; font-family: system-ui, -apple-system, sans-serif; }
+        /* Base Reset */
+        body { margin: 0; padding: 0; background-color: #f9fafb; font-family: 'Open Sans', system-ui, sans-serif; }
         
         /* 1. ANIMATIONS */
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes pulse-fade { 
-          0% { opacity: 0.6; } 
-          50% { opacity: 1; } 
-          100% { opacity: 0.6; } 
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+        @keyframes pulse-fade { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        @keyframes slide-up-fade { 
+          0% { opacity: 0; transform: translateY(10px); } 
+          10% { opacity: 1; transform: translateY(0); } 
+          90% { opacity: 1; transform: translateY(0); } 
+          100% { opacity: 0; transform: translateY(-10px); } 
         }
 
         /* 2. SKELETON LAYOUT */
-        .app-shell {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          width: 100vw;
-          overflow: hidden;
-        }
+        .app-shell { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
 
         /* Navbar Skeleton */
         .sk-nav {
-          height: 64px;
-          background: white;
-          border-bottom: 1px solid #e5e7eb;
-          display: flex;
-          align-items: center;
-          padding: 0 24px;
-          justify-content: space-between;
+          height: 64px; background: white; border-bottom: 1px solid #e5e7eb;
+          display: flex; align-items: center; padding: 0 24px; justify-content: space-between;
         }
 
         /* Sidebar + Content Wrapper */
-        .sk-body {
-          flex: 1;
-          display: flex;
-          background-color: #f3f4f6;
-        }
+        .sk-body { flex: 1; display: flex; background-color: #f3f4f6; }
 
-        /* Sidebar Skeleton (Hidden on Mobile) */
+        /* Sidebar Skeleton */
         .sk-sidebar {
-          width: 260px;
-          background: white;
-          border-right: 1px solid #e5e7eb;
-          height: 100%;
-          display: none; /* Mobile first */
-          flex-direction: column;
-          padding: 20px;
-          gap: 15px;
+          width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100%;
+          display: none; flex-direction: column; padding: 20px; gap: 15px;
         }
-        @media (min-width: 1024px) { 
-          .sk-sidebar { display: flex; } 
-        }
+        @media (min-width: 1024px) { .sk-sidebar { display: flex; } }
 
-        /* Main Content Skeleton */
-        .sk-main {
-          flex: 1;
-          padding: 30px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center; /* Center the spinner */
-        }
+        /* Main Content */
+        .sk-main { flex: 1; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* 3. BRAND PULSE (Applied to Logo Area) */
-        .sk-logo-area {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
+        /* 3. BRANDING */
+        .sk-logo-area { display: flex; align-items: center; gap: 10px; }
         .sk-logo-circle {
-          width: 32px;
-          height: 32px;
-          background-color: #29ec50; /* Your Brand Green */
-          border-radius: 6px;
-          opacity: 0.8;
-          animation: pulse-fade 2s infinite ease-in-out;
+          width: 32px; height: 32px; background-color: #29ec50; /* Brand Green */
+          border-radius: 6px; opacity: 0.8; animation: pulse-fade 2s infinite ease-in-out;
         }
-        .sk-logo-text {
-          width: 120px;
-          height: 16px;
-          background: #e5e7eb;
-          border-radius: 4px;
-        }
+        .sk-logo-text { width: 120px; height: 16px; background: #e5e7eb; border-radius: 4px; }
 
-        /* 4. TWIN SPINNER (Applied to Center) */
+        /* 4. LOADING CARD */
         .center-loading-box {
-          background: white;
-          padding: 40px;
-          border-radius: 12px;
+          background: white; padding: 40px; border-radius: 12px;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-          max-width: 400px;
-          width: 90%;
+          text-align: center; display: flex; flex-direction: column; align-items: center;
+          gap: 20px; max-width: 450px; width: 90%;
         }
 
         .twin-spinner {
-          width: 50px;
-          height: 50px;
+          width: 50px; height: 50px;
           border: 4px solid #e5e7eb;
-          border-top-color: #3bf66a; /* Your Brand Green */
-          border-right-color: #23ca3a; /* Your Brand Green */
+          border-top-color: #3bf66a; /* Light Green */
+          border-right-color: #23ca3a; /* Dark Green */
           border-radius: 50%;
-          animation: spin 0.8s linear infinite;
+          animation: spin 1s linear infinite;
         }
 
-        .loading-text {
-          color: #374151;
-          font-weight: 600;
-          font-size: 1.1rem;
-        }
+        .loading-title { color: #374151; font-weight: 700; font-size: 1.2rem; margin-bottom: 5px; }
         
-        .sub-text {
-          color: #9ca3af;
-          font-size: 0.875rem;
+        /* 5. CHANGING MESSAGE STYLE */
+        .fun-message-box {
+          height: 50px; /* Fixed height to prevent jumping */
+          display: flex; align-items: center; justify-content: center;
+        }
+        .message-text {
+          color: #6b7280; font-size: 0.95rem; font-style: italic;
+          animation: slide-up-fade 4s ease-in-out infinite;
         }
 
-        /* Extra: Shimmer Effect on Sidebar Items */
-        .sk-line {
-          height: 12px;
-          background: #f3f4f6;
-          border-radius: 4px;
-          width: 100%;
-        }
+        .sk-line { height: 12px; background: #f3f4f6; border-radius: 4px; width: 100%; }
         .sk-line.short { width: 60%; }
         
-        /* Manual Retry Button Styling */
+        /* Manual Retry Button */
         .manual-retry-container {
-            position: fixed; 
-            bottom: 20px; 
-            left: 0; 
-            right: 0; 
-            text-align: center; 
-            z-index: 9999;
+            position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; z-index: 9999;
         }
         .manual-retry-btn {
-            display: none; 
-            background: #23ca3a; /* Your Brand Green */
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 20px; 
-            font-family: system-ui, -apple-system, sans-serif;
-            font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            cursor: pointer;
-            transition: transform 0.1s;
+            display: none; background: #23ca3a; color: white; border: none; 
+            padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(35, 202, 58, 0.3); transition: transform 0.1s;
         }
-        .manual-retry-btn:active {
-            transform: scale(0.95);
-        }
+        .manual-retry-btn:active { transform: scale(0.95); }
       </style>
 
       <div id="static-loader-content" class="app-shell">
@@ -197,18 +114,19 @@
         <div class="sk-body">
           <div class="sk-sidebar">
             <div class="sk-line" style="height: 40px; margin-bottom: 20px;"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line"></div>
-            <div class="sk-line short"></div>
+            <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line short"></div>
           </div>
 
           <div class="sk-main">
             <div class="center-loading-box">
               <div class="twin-spinner"></div> 
               <div>
-                <div class="loading-text">Edges Africa LMS</div>
-                <div class="sub-text">Loading...</div>
+                <div class="loading-title">Edges Africa LMS</div>
+                
+                <div class="fun-message-box">
+                  <div id="dynamic-message" class="message-text">Preparing your classroom...</div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -216,57 +134,87 @@
 
         <div class="manual-retry-container">
            <button id="manual-retry-btn" class="manual-retry-btn" onclick="window.location.reload()">
-             Taking too long? Tap to Reload
+             Network is slow? Tap to Reload
            </button>
         </div>
 
       </div>
       
       <noscript>
-        <div style="padding: 20px; color: red; text-align: center;">
-          JavaScript is required to use this application. <br>  Please update your Browser. 
-        </div>
+        <div style="padding: 20px; color: red; text-align: center;">Enable JavaScript to continue.</div>
       </noscript>
 
     </div>
 
     <script>
       (function() {
-        // Configuration
-        var WAIT_TIME = 12000; // 12 seconds wait
+        var loader = document.getElementById('static-loader-content');
+        if (!loader) return; // React already loaded, exit.
+
+        // --- 1. CONFIGURATION ---
+        var AUTO_RELOAD_TIME = 60000; // 1 Minute
+        var MANUAL_BTN_TIME = 90000;  // 1.5 Minutes
         var STORAGE_KEY = 'edges_retry_attempt';
+        
+        // --- 2. FUN MESSAGES LIST ---
+        var messages = [
+          "Preparing your digital classroom...",
+          "Did you know? Consistency is the key to mastery.",
+          "Connecting to Edges Africa cloud...",
+          "Downloading course materials...",
+          "Sharpening digital pencils...",
+          "Almost there..."
+        ];
 
-        setTimeout(function() {
-          // 1. Check if React has taken over
-          // If React loaded, it deletes the 'static-loader-content' div automatically
-          var loader = document.getElementById('static-loader-content');
+        // --- 3. MESSAGE ROTATOR (Every 4 seconds) ---
+        var msgIndex = 0;
+        var msgElement = document.getElementById('dynamic-message');
+        
+        setInterval(function() {
+          if (!document.getElementById('static-loader-content')) return; // Stop if app loaded
+          msgIndex = (msgIndex + 1) % messages.length;
           
-          if (loader) {
-            // React is NOT loaded yet. We are stuck.
-            console.warn("App stuck on index. Initiating safety protocol.");
+          // Reset animation to force replay
+          msgElement.style.animation = 'none';
+          msgElement.offsetHeight; /* trigger reflow */
+          msgElement.style.animation = 'slide-up-fade 4s ease-in-out infinite';
+          
+          msgElement.innerText = messages[msgIndex];
+        }, 4000);
 
-            // 2. Check if we already reloaded once
-            var hasReloaded = sessionStorage.getItem(STORAGE_KEY);
 
-            if (!hasReloaded) {
-              // FIRST TIME STUCK: Auto-Reload
-              sessionStorage.setItem(STORAGE_KEY, 'true');
-              window.location.reload();
-            } else {
-              // SECOND TIME STUCK: Do not loop. Show the Manual Button instead.
-              // Clear the flag so next session resets
-              sessionStorage.removeItem(STORAGE_KEY);
-              
-              // Show the "Tap to Reload" button
-              var btn = document.getElementById('manual-retry-btn');
-              if (btn) btn.style.display = 'inline-block';
-              
-              // Change text to apologize
-              var subText = document.querySelector('.sub-text');
-              if (subText) subText.innerText = "Connection is slow...";
+        // --- 4. RELOAD LOGIC ---
+        var hasReloaded = sessionStorage.getItem(STORAGE_KEY);
+
+        if (!hasReloaded) {
+          // === FIRST VISIT ===
+          setTimeout(function() {
+            if (document.getElementById('static-loader-content')) {
+               console.warn("First attempt timeout. Reloading...");
+               sessionStorage.setItem(STORAGE_KEY, 'true');
+               window.location.reload();
             }
-          }
-        }, WAIT_TIME);
+          }, AUTO_RELOAD_TIME); // 60s
+        } else {
+          // === SECOND VISIT (After Reload) ===
+          
+          // Clear flag so next visit is fresh
+          setTimeout(() => sessionStorage.removeItem(STORAGE_KEY), 5000);
+
+          setTimeout(function() {
+            if (document.getElementById('static-loader-content')) {
+               // Show Manual Button after 1.5 mins
+               var btn = document.getElementById('manual-retry-btn');
+               if (btn) btn.style.display = 'inline-block';
+               
+               // Update message to be honest
+               msgElement.innerText = "Connection is taking longer than usual...";
+               msgElement.style.animation = 'none'; // Stop animating
+               msgElement.style.opacity = '1';
+            }
+          }, MANUAL_BTN_TIME); // 90s
+        }
+
       })();
     </script>
 
