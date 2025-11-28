@@ -1,4 +1,4 @@
-import React, { Suspense } from "react"; // 1. Import Suspense
+import React, { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Navigation from "./components/Navigation";
@@ -6,10 +6,15 @@ import Footer from "./components/Footer";
 import AuthModal from "./components/Auth/AuthModal";
 import ServerAwake from "./components/ServerAwake";
 
-// 2. LAZY LOAD YOUR PAGES
-// This breaks your huge index.js into many small files.
-const HomePage = React.lazy(() => import("./pages/HomePage"));
-const CoursesPage = React.lazy(() => import("./pages/CoursesPage"));
+// 🚀 EAGER LOAD (Instant Start)
+// These pages come packaged with the main bundle so they open INSTANTLY.
+import HomePage from "./pages/HomePage";
+import AuthPage from "./components/Auth/AuthPage";
+import RegisterPage from "./components/Auth/RegisterPage";
+import CoursesPage from "./pages/CoursesPage"; // Public pages should be fast
+
+// 🐢 LAZY LOAD (Download Later)
+// These download only when the user logs in or clicks them.
 const CourseDetailPage = React.lazy(() => import("./pages/CourseDetailPage"));
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
 const InstructorPage = React.lazy(() => import("./pages/InstructorPage"));
@@ -18,10 +23,7 @@ const MyCoursesPage = React.lazy(() => import("./pages/MyCoursesPage"));
 const ProfileSettingsPage = React.lazy(() => import("./pages/ProfileSettingsPage"));
 const CourseBuilderPage = React.lazy(() => import("./pages/CourseBuilderPage"));
 const QuizPlayerPage = React.lazy(() => import("./pages/QuizPlayerPage"));
-const AuthPage = React.lazy(() => import("./components/Auth/AuthPage"));
-const RegisterPage = React.lazy(() => import("./components/Auth/RegisterPage"));
 
-// 3. Create a Simple Loading Spinner for Page Switches
 const PageLoader = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
     <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
@@ -47,24 +49,23 @@ function App() {
             />
 
             <main>
-              {/* 4. Wrap Routes in Suspense */}
+              {/* Suspense handles the loading for the Lazy pages */}
               <Suspense fallback={<PageLoader />}>
                 <Routes>
+                  {/* ✅ Fast Routes (No Spinner) */}
                   <Route path="/" element={<HomePage />} />
-                  <Route path="/courses" element={<CoursesPage />} />
-                  <Route path="/course/:courseId" element={<CourseDetailPage />} />
-                  
                   <Route path="/login" element={<AuthPage />} />
                   <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/instructors" element={<InstructorPage />} />
+                  <Route path="/courses" element={<CoursesPage />} />
                   
-                  {/* These heavy pages will ONLY download when visited */}
+                  {/* 💤 Slow/Heavy Routes (Shows Spinner on first click) */}
+                  <Route path="/course/:courseId" element={<CourseDetailPage />} />
+                  <Route path="/instructors" element={<InstructorPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/learn/course/:courseId" element={<CoursePlayerPage />} />
                   <Route path="/my-courses" element={<MyCoursesPage />} />
                   <Route path="/profile-settings" element={<ProfileSettingsPage />} />
                   <Route path="/quiz/:quizId" element={<QuizPlayerPage />} />
-                  
                   <Route path="/instructor/course/new" element={<CourseBuilderPage />} />
                   <Route path="/instructor/course/edit/:courseId" element={<CourseBuilderPage />} />
                 </Routes>

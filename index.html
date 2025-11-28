@@ -7,18 +7,15 @@
     <title>Edges Africa C 2025 - Learning Management System</title>
     <meta name="description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career." />
     
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
     
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://edgesafrica.com/">
     <meta property="og:title" content="Edges Africa C 2025 - Learning Management System">
     <meta property="og:description" content="Empowering African minds with world-class education. Learn skills that matter, build projects that count, and advance your career.">
     
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://edgesafrica.com/">
     <meta property="twitter:title" content="Edges Africa C 2025 - Learning Management System">
@@ -43,7 +40,7 @@
           100% { background-position: 200% 0; }
         }
 
-        /* 2. SKELETON LAYOUT (Option 3) */
+        /* 2. SKELETON LAYOUT */
         .app-shell {
           display: flex;
           flex-direction: column;
@@ -95,7 +92,7 @@
           justify-content: center; /* Center the spinner */
         }
 
-        /* 3. BRAND PULSE (Option 2 - Applied to Logo Area) */
+        /* 3. BRAND PULSE (Applied to Logo Area) */
         .sk-logo-area {
           display: flex;
           align-items: center;
@@ -104,7 +101,7 @@
         .sk-logo-circle {
           width: 32px;
           height: 32px;
-          background-color: #29ec50; /* Brand Blue */
+          background-color: #29ec50; /* Your Brand Green */
           border-radius: 6px;
           opacity: 0.8;
           animation: pulse-fade 2s infinite ease-in-out;
@@ -116,7 +113,7 @@
           border-radius: 4px;
         }
 
-        /* 4. TWIN SPINNER (Option 1 - Applied to Center) */
+        /* 4. TWIN SPINNER (Applied to Center) */
         .center-loading-box {
           background: white;
           padding: 40px;
@@ -135,8 +132,8 @@
           width: 50px;
           height: 50px;
           border: 4px solid #e5e7eb;
-          border-top-color: #3bf66a; /* Brand Blue */
-          border-right-color: #23ca3a;
+          border-top-color: #3bf66a; /* Your Brand Green */
+          border-right-color: #23ca3a; /* Your Brand Green */
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
@@ -161,15 +158,41 @@
         }
         .sk-line.short { width: 60%; }
         
+        /* Manual Retry Button Styling */
+        .manual-retry-container {
+            position: fixed; 
+            bottom: 20px; 
+            left: 0; 
+            right: 0; 
+            text-align: center; 
+            z-index: 9999;
+        }
+        .manual-retry-btn {
+            display: none; 
+            background: #23ca3a; /* Your Brand Green */
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            font-family: system-ui, -apple-system, sans-serif;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .manual-retry-btn:active {
+            transform: scale(0.95);
+        }
       </style>
 
-      <div class="app-shell">
+      <div id="static-loader-content" class="app-shell">
         
         <div class="sk-nav">
           <div class="sk-logo-area">
             <div class="sk-logo-circle"></div> <div class="sk-logo-text"></div>
           </div>
-          <div class="sk-logo-text" style="width: 40px; border-radius: 50%; height: 40px;"></div> </div>
+          <div class="sk-logo-text" style="width: 40px; border-radius: 50%; height: 40px;"></div> 
+        </div>
 
         <div class="sk-body">
           <div class="sk-sidebar">
@@ -182,13 +205,21 @@
 
           <div class="sk-main">
             <div class="center-loading-box">
-              <div class="twin-spinner"></div> <div>
+              <div class="twin-spinner"></div> 
+              <div>
                 <div class="loading-text">Edges Africa LMS</div>
                 <div class="sub-text">Loading...</div>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="manual-retry-container">
+           <button id="manual-retry-btn" class="manual-retry-btn" onclick="window.location.reload()">
+             Taking too long? Tap to Reload
+           </button>
+        </div>
+
       </div>
       
       <noscript>
@@ -198,6 +229,47 @@
       </noscript>
 
     </div>
+
+    <script>
+      (function() {
+        // Configuration
+        var WAIT_TIME = 12000; // 12 seconds wait
+        var STORAGE_KEY = 'edges_retry_attempt';
+
+        setTimeout(function() {
+          // 1. Check if React has taken over
+          // If React loaded, it deletes the 'static-loader-content' div automatically
+          var loader = document.getElementById('static-loader-content');
+          
+          if (loader) {
+            // React is NOT loaded yet. We are stuck.
+            console.warn("App stuck on index. Initiating safety protocol.");
+
+            // 2. Check if we already reloaded once
+            var hasReloaded = sessionStorage.getItem(STORAGE_KEY);
+
+            if (!hasReloaded) {
+              // FIRST TIME STUCK: Auto-Reload
+              sessionStorage.setItem(STORAGE_KEY, 'true');
+              window.location.reload();
+            } else {
+              // SECOND TIME STUCK: Do not loop. Show the Manual Button instead.
+              // Clear the flag so next session resets
+              sessionStorage.removeItem(STORAGE_KEY);
+              
+              // Show the "Tap to Reload" button
+              var btn = document.getElementById('manual-retry-btn');
+              if (btn) btn.style.display = 'inline-block';
+              
+              // Change text to apologize
+              var subText = document.querySelector('.sub-text');
+              if (subText) subText.innerText = "Connection is slow...";
+            }
+          }
+        }, WAIT_TIME);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
