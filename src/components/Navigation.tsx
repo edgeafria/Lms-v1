@@ -79,17 +79,19 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="flex justify-between items-center h-16">
 
           {/* Logo Section (Unchanged) */}
-          <div className="flex items-center space-x-2">
-            <Link to="/" className="flex items-center space-x-2" aria-label="Edges Africa Home">
-              <div className="bg-primary-500 p-2 rounded-lg flex-shrink-0">
-                <BookOpen className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-headline font-bold text-primary-500">
-                  Edges Africa
-                </h1>
-                <p className="text-xs text-gray-600 font-body -mt-1">C 2025</p>
-              </div>
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center" aria-label="Edges Africa Home">
+              {/* 🖼️ JUST THE LOGO IMAGE */}
+              {/* Since the text is inside the image, we don't need h1 tags next to it */}
+              <img 
+                src="/logo-color.png" 
+                alt="Edges Africa" 
+                // Increased height slightly to h-12 (48px) so it's legible since it's the only element
+                className="h-12 w-auto object-contain" 
+                width="160" 
+                height="48"
+                loading="eager" 
+              />
             </Link>
           </div>
 

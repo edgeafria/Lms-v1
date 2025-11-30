@@ -2,17 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/icon.png"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Edges Africa C 2025 - Learning Management System</title>
-    <meta name="description" content="Empowering African minds with world-class education." />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
     <link rel="preconnect" href="https://api.edgesafrica.org" crossorigin>
     <link rel="dns-prefetch" href="https://api.edgesafrica.org">
-
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
@@ -20,92 +17,127 @@
       
       <style>
         /* Base Reset */
-        body { margin: 0; padding: 0; background-color: #f9fafb; font-family: 'Open Sans', system-ui, sans-serif; }
+        body { margin: 0; padding: 0; background-color: #f9fafb; font-family: 'Open Sans', sans-serif; overflow: hidden; }
         
-        /* ANIMATIONS */
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes pulse-fade { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        @keyframes slide-up-fade { 
-          0% { opacity: 0; transform: translateY(10px); } 
-          10% { opacity: 1; transform: translateY(0); } 
-          90% { opacity: 1; transform: translateY(0); } 
-          100% { opacity: 0; transform: translateY(-10px); } 
+        /* 1. ANIMATIONS */
+        @keyframes float-around {
+          0% { transform: translate(0, 0) rotate(0deg); }
+          25% { transform: translate(20px, -30px) rotate(5deg); }
+          50% { transform: translate(-10px, 10px) rotate(-5deg); }
+          75% { transform: translate(30px, 20px) rotate(8deg); }
+          100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        @keyframes ripple {
+          0% { transform: scale(0.8); opacity: 0.8; border-width: 2px; }
+          100% { transform: scale(2.5); opacity: 0; border-width: 0px; }
+        }
+        @keyframes progress-fill {
+          0% { width: 0%; }
+          100% { width: 90%; } 
+        }
+        @keyframes slide-text {
+          0%, 90% { opacity: 1; transform: translateY(0); }
+          95% { opacity: 0; transform: translateY(-10px); }
+          100% { opacity: 0; transform: translateY(10px); }
         }
 
-        /* LAYOUT */
-        .app-shell { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
-        .sk-nav {
-          height: 64px; background: white; border-bottom: 1px solid #e5e7eb;
-          display: flex; align-items: center; padding: 0 24px; justify-content: space-between;
-        }
-        .sk-body { flex: 1; display: flex; background-color: #f3f4f6; }
-        .sk-sidebar {
-          width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100%;
-          display: none; flex-direction: column; padding: 20px; gap: 15px;
-        }
+        /* 2. LAYOUT */
+        .app-shell { display: flex; flex-direction: column; height: 100vh; width: 100vw; position: relative; z-index: 10; }
+        .sk-nav { height: 64px; background: white; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 24px; justify-content: space-between; z-index: 20; position: relative; }
+        .sk-body { flex: 1; display: flex; background-color: #f3f4f6; position: relative; overflow: hidden; }
+        .sk-sidebar { width: 260px; background: white; border-right: 1px solid #e5e7eb; height: 100%; display: none; flex-direction: column; padding: 20px; gap: 15px; z-index: 20; }
         @media (min-width: 1024px) { .sk-sidebar { display: flex; } }
-        .sk-main { flex: 1; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .sk-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 10; }
 
-        /* COMPONENTS */
-        .sk-logo-area { display: flex; align-items: center; gap: 10px; }
-        .sk-logo-circle {
-          width: 32px; height: 32px; background-color: #29ec50; 
-          border-radius: 6px; opacity: 0.8; animation: pulse-fade 2s infinite ease-in-out;
+        /* 3. FLOATING ICONS (The "Education Animation") */
+        .float-icon {
+          position: absolute;
+          opacity: 0.15; /* Subtle but visible */
+          color: #0F6848;
+          z-index: 0;
+          animation: float-around 12s ease-in-out infinite;
         }
-        .sk-logo-text { width: 120px; height: 16px; background: #e5e7eb; border-radius: 4px; }
-        
+        .icon-book { top: 15%; left: 10%; width: 120px; height: 120px; animation-delay: 0s; color: #0F6848; }
+        .icon-grad { bottom: 20%; right: 10%; width: 140px; height: 140px; animation-delay: -3s; color: #3B68B1; }
+        .icon-bulb { top: 20%; right: 20%; width: 80px; height: 80px; animation-delay: -6s; color: #F8C64F; }
+        .icon-pencil { bottom: 15%; left: 20%; width: 90px; height: 90px; animation-delay: -9s; color: #0F6848; }
+
+        /* 4. LOADING CARD */
         .center-loading-box {
-          background: white; padding: 40px; border-radius: 12px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-          text-align: center; display: flex; flex-direction: column; align-items: center;
-          gap: 20px; max-width: 450px; width: 90%;
+          /* Removed background, shadow, border, and padding */
+          text-align: center;
+          display: flex; flex-direction: column; align-items: center;
+          gap: 25px;
+          max-width: 400px; width: 90%;
+          position: relative; z-index: 10;
         }
-        .twin-spinner {
-          width: 50px; height: 50px;
-          border: 4px solid #e5e7eb;
-          border-top-color: #3bf66a; border-right-color: #23ca3a;
-          border-radius: 50%; animation: spin 1s linear infinite;
+
+        /* Logo & Ripple */
+        .logo-wrapper { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+        .ripple-circle {
+          position: absolute; width: 100%; height: 100%; border-radius: 50%;
+          border: 2px solid #0F6848; opacity: 0;
+          animation: ripple 3s infinite cubic-bezier(0, 0.2, 0.8, 1);
         }
-        .loading-title { color: #374151; font-weight: 700; font-size: 1.2rem; margin-bottom: 5px; }
-        
-        /* MESSAGES & BUTTONS */
-        .fun-message-box { height: 50px; display: flex; align-items: center; justify-content: center; }
-        .message-text {
-          color: #6b7280; font-size: 0.95rem; font-style: italic;
-          animation: slide-up-fade 4s ease-in-out infinite;
-        }
+        .logo-img { width: 100px; height: auto; position: relative; z-index: 2; animation: breathe 4s ease-in-out infinite; }
+
+        /* Progress & Text */
+        .progress-container { width: 100%; height: 4px; background-color: #f3f4f6; border-radius: 2px; overflow: hidden; margin-top: 10px; }
+        .progress-bar { height: 100%; background-color: #0F6848; width: 0%; border-radius: 2px; animation: progress-fill 15s ease-out forwards; }
+        .loading-title { color: #1f2937; font-weight: 800; font-size: 1.25rem; }
+        .fun-message-box { height: 40px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .message-text { color: #6b7280; font-size: 0.9rem; font-weight: 500; animation: slide-text 4s ease-in-out infinite; }
+
+        /* Skeleton */
         .sk-line { height: 12px; background: #f3f4f6; border-radius: 4px; width: 100%; }
         .sk-line.short { width: 60%; }
+        .sk-logo-area { display: flex; align-items: center; gap: 10px; }
+        .sk-logo-circle { width: 32px; height: 32px; background-color: #0F6848; border-radius: 6px; opacity: 0.2; }
+        .sk-logo-text { width: 120px; height: 16px; background: #e5e7eb; border-radius: 4px; }
         
         .manual-retry-container { position: fixed; bottom: 30px; left: 0; right: 0; text-align: center; z-index: 9999; }
-        .manual-retry-btn {
-            display: none; background: #23ca3a; color: white; border: none; 
-            padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(35, 202, 58, 0.3); transition: transform 0.1s;
-        }
-        .manual-retry-btn:active { transform: scale(0.95); }
+        .manual-retry-btn { display: none; background: #0F6848; color: white; border: none; padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(15, 104, 72, 0.3); }
       </style>
 
       <div id="static-loader-content" class="app-shell">
+        
         <div class="sk-nav">
           <div class="sk-logo-area"><div class="sk-logo-circle"></div> <div class="sk-logo-text"></div></div>
           <div class="sk-logo-text" style="width: 40px; border-radius: 50%; height: 40px;"></div> 
         </div>
+
         <div class="sk-body">
+          
+          <svg class="float-icon icon-book" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+          <svg class="float-icon icon-grad" fill="currentColor" viewBox="0 0 24 24"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+          <svg class="float-icon icon-bulb" fill="currentColor" viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
+          <svg class="float-icon icon-pencil" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+
           <div class="sk-sidebar">
             <div class="sk-line" style="height: 40px; margin-bottom: 20px;"></div>
             <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line"></div> <div class="sk-line short"></div>
           </div>
+
           <div class="sk-main">
             <div class="center-loading-box">
-              <div class="twin-spinner"></div> 
-              <div>
+              <div class="logo-wrapper">
+                <div class="ripple-circle"></div>
+                <div class="ripple-circle" style="animation-delay: 1s;"></div>
+                <img src="/logo-color.png" alt="Loading" class="logo-img" />
+              </div>
+              <div style="width: 100%;">
                 <div class="loading-title">Edges Africa LMS</div>
-                <div class="fun-message-box"><div id="dynamic-message" class="message-text">Preparing your classroom...</div></div>
+                <div class="fun-message-box"><div id="dynamic-message" class="message-text">Initializing secure connection...</div></div>
+                <div class="progress-container"><div class="progress-bar"></div></div>
               </div>
             </div>
           </div>
         </div>
+
         <div class="manual-retry-container">
            <button id="manual-retry-btn" class="manual-retry-btn" onclick="window.location.reload()">Network is slow? Tap to Reload</button>
         </div>
@@ -119,8 +151,8 @@
         var loader = document.getElementById('static-loader-content');
         if (!loader) return;
 
-        var AUTO_RELOAD_TIME = 60000; // 60s
-        var MANUAL_BTN_TIME = 90000;  // 90s
+        var AUTO_RELOAD_TIME = 60000; 
+        var MANUAL_BTN_TIME = 90000;  
         var STORAGE_KEY = 'edges_retry_attempt';
         
         var messages = [
@@ -129,7 +161,7 @@
           "Connecting to Edges Africa cloud...",
           "Downloading course materials...",
           "Sharpening digital pencils...",
-          "Almost there..."
+          "Establishing secure link..."
         ];
 
         var msgIndex = 0;
@@ -140,7 +172,7 @@
           msgIndex = (msgIndex + 1) % messages.length;
           msgElement.style.animation = 'none';
           msgElement.offsetHeight; 
-          msgElement.style.animation = 'slide-up-fade 4s ease-in-out infinite';
+          msgElement.style.animation = 'slide-text 4s ease-in-out infinite';
           msgElement.innerText = messages[msgIndex];
         }, 4000);
 
@@ -148,7 +180,6 @@
         if (!hasReloaded) {
           setTimeout(function() {
             if (document.getElementById('static-loader-content')) {
-               console.warn("First attempt timeout. Reloading...");
                sessionStorage.setItem(STORAGE_KEY, 'true');
                window.location.reload();
             }
