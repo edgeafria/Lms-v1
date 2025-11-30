@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Play, Star, Users, BookOpen, Award } from 'lucide-react';
 
 const Hero: React.FC = () => {
@@ -49,13 +50,16 @@ const Hero: React.FC = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-secondary-500 hover:bg-secondary-600 text-white px-8 py-4 rounded-lg text-lg font-body font-semibold transition-all duration-300 transform hover:scale-105 animate-pulse-glow">
+             <Link 
+                to="/register"
+                className="bg-secondary-500 hover:bg-secondary-600 text-white px-8 py-4 rounded-lg text-lg font-body font-semibold transition-all duration-300 transform hover:scale-105 animate-pulse-glow inline-block text-center"
+              >
                 Start Learning Today
-              </button>
-              <button className="flex items-center justify-center space-x-2 border-2 border-white text-white hover:bg-white hover:text-primary-500 px-8 py-4 rounded-lg text-lg font-body font-semibold transition-all duration-300">
+            </Link>
+              {/* <button className="flex items-center justify-center space-x-2 border-2 border-white text-white hover:bg-white hover:text-primary-500 px-8 py-4 rounded-lg text-lg font-body font-semibold transition-all duration-300">
                 <Play className="h-5 w-5" />
                 <span>Watch Demo</span>
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -65,9 +69,9 @@ const Hero: React.FC = () => {
               {/* Video Player Mockup */}
               <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg relative overflow-hidden group cursor-pointer">
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                  <div className="bg-secondary-500 hover:bg-secondary-600 rounded-full p-4 transform group-hover:scale-110 transition-transform">
+                  {/* <div className="bg-secondary-500 hover:bg-secondary-600 rounded-full p-4 transform group-hover:scale-110 transition-transform">
                     <Play className="h-8 w-8 text-white ml-1" />
-                  </div>
+                  </div> */}
                 </div>
                 <img 
                   src="https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg" 
@@ -77,7 +81,7 @@ const Hero: React.FC = () => {
               </div>
               
               {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 bg-accent-500 text-primary-500 px-4 py-2 rounded-lg font-body font-semibold shadow-lg animate-fade-in">
+              <div className="absolute -top-4 -right-4 bg-tech-500 text-white px-4 py-2 rounded-lg font-body font-semibold shadow-lg animate-fade-in">
                 🎓 New Course Alert!
               </div>
               
@@ -87,7 +91,7 @@ const Hero: React.FC = () => {
                   <div className="w-6 h-6 bg-tech-500 rounded-full border-2 border-white"></div>
                   <div className="w-6 h-6 bg-accent-500 rounded-full border-2 border-white"></div>
                 </div>
-                <span className="text-sm">1.2K watching</span>
+                <span className="text-sm">1.2K learners</span>
               </div>
             </div>
           </div>
