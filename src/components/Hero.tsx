@@ -91,7 +91,7 @@ const Hero: React.FC = () => {
                   <div className="w-6 h-6 bg-tech-500 rounded-full border-2 border-white"></div>
                   <div className="w-6 h-6 bg-accent-500 rounded-full border-2 border-white"></div>
                 </div>
-                <span className="text-sm">1.2K learners</span>
+                <span className="text-sm">1.2K instructors</span>
               </div>
             </div>
           </div>

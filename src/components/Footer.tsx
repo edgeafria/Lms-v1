@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
             <Link to="/" className="flex items-center gap-2 group">
             {/* 🖼️ LOGO IMAGE */}
             <img 
-              src="/logo-color.png" 
+              src="/logo-white.png" 
               alt="Edges Africa" 
               // We use h-10 (40px) or h-12 (48px) depending on how big you want it
               className="h-10 w-auto object-contain"
